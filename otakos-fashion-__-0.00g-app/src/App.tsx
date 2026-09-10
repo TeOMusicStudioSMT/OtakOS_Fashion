@@ -11,6 +11,7 @@ import { JsonCatalogViewer } from './components/JsonCatalogViewer';
 import { Galeria } from './components/Galeria';
 import { Kreacja } from './components/Kreacja';
 import { Marki } from './components/Marki';
+import { Dozorca } from './components/Dozorca';
 import { GarmentInspectorModal } from './components/GarmentInspectorModal';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { Sparkles, Terminal, Layers, ArrowUp, Info } from 'lucide-react';
@@ -162,6 +163,9 @@ function AppContent() {
 
         {/* Trzecia tafla — kto to firmuje i ile jest warte. */}
         {viewMode === 'marki' && <Marki />}
+
+        {/* Czwarta tafla — kto pilnuje, czy to żyje. */}
+        {viewMode === 'ai' && <Dozorca />}
 
         {viewMode === 'runway-cards' && (
           <div className="space-y-6">

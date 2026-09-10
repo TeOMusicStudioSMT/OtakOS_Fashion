@@ -7,6 +7,7 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { zaprojektuj as zaprojektujLokalnie, stanKrawca } from './krawiec-lokalny';
 import { kadry as kadryProdukcji, projekty as projektyKatedry, wykuj, kreacje as wczytajKreacje } from './jajo-mody';
 import { narysuj, lista as wczytajWizualizacje } from './wizualizacje';
+import { przeglad } from './dozorca';
 import { lista as wczytajMarki, zapisz as zapiszMarke, usun as usunMarke, wgrajLogo, nalozLogo, wycen, ROGI } from './marki';
 
 /**
@@ -66,6 +67,19 @@ app.get('/api/health', (req, res) => {
 /**
  * Czym dziś projektujemy — żeby panel nie obiecywał kreacji, której nie ma jak policzyć.
  */
+// ── 🧠 AI — DOZORCA ────────────────────────────────────────
+
+/**
+ * Przeglad zycia produktu.
+ *
+ * ⚠️ Dozorca NIC NIE URUCHAMIA — czyta stan i mówi, co stoi. Agent, który
+ * sam rusza sto renderów, potrafi zająć kartę na dobę bez pytania.
+ */
+app.get('/api/ai/przeglad', async (_req, res) => {
+  try { res.json(await przeglad()); }
+  catch (err: any) { res.status(500).json({ error: String(err?.message ?? err) }); }
+});
+
 // ── 🏷️ MARKI ────────────────────────────────────────────
 
 /**

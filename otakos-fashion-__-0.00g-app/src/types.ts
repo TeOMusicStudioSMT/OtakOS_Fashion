@@ -35,7 +35,7 @@ export interface SolletPiece {
  * ⚠️ `galeria` JEST PIERWSZA — to ona pokazuje PRAWDZIWY materiał.
  * Pozostałe widoki przyszły z szablonu AI Studio i operują na samych opisach.
  */
-export type ViewMode = 'galeria' | 'kreacja' | 'marki' | 'runway-cards' | 'blueprint-matrix' | 'moodboard' | 'ai-stylist' | 'raw-json';
+export type ViewMode = 'galeria' | 'kreacja' | 'marki' | 'ai' | 'runway-cards' | 'blueprint-matrix' | 'moodboard' | 'ai-stylist' | 'raw-json';
 
 export type ColorwayPillar = 'Neon Green' | 'Void Blue' | 'Alchemical Orange';
 
