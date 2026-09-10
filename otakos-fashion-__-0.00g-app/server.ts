@@ -1,11 +1,13 @@
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
+import fsp from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI, Type } from '@google/genai';
 import { zaprojektuj as zaprojektujLokalnie, stanKrawca } from './krawiec-lokalny';
 import { kadry as kadryProdukcji, projekty as projektyKatedry, wykuj, kreacje as wczytajKreacje } from './jajo-mody';
 import { narysuj, lista as wczytajWizualizacje } from './wizualizacje';
+import { lista as wczytajMarki, zapisz as zapiszMarke, usun as usunMarke, wgrajLogo, nalozLogo, wycen, ROGI } from './marki';
 
 /**
  * ⚠️ CHMURA JEST WYŁĄCZONA DOMYŚLNIE.
@@ -64,6 +66,105 @@ app.get('/api/health', (req, res) => {
 /**
  * Czym dziś projektujemy — żeby panel nie obiecywał kreacji, której nie ma jak policzyć.
  */
+// ── 🏷️ MARKI ────────────────────────────────────────────
+
+/**
+ * Marki wraz z WYCENĄ rozbitą na składniki.
+ *
+ * ⚠️ Portfolio liczymy z REALNYCH plików, nie z deklaracji: ile kreacji jest
+ * w katalogu, ile ma rysunek, ile jest ofirmowanych. Wycena bez policzonej
+ * podstawy to liczba, w którą trzeba wierzyć.
+ */
+app.get('/api/marki', async (_req, res) => {
+  try {
+    const marki = await wczytajMarki();
+    const wiz = await wczytajWizualizacje();
+    const kreacje = await wczytajKreacje();
+
+    let ofirmowanych = 0;
+    try {
+      const pliki = await fsp.readdir(path.join(process.cwd(), 'public', 'ofirmowane'));
+      ofirmowanych = pliki.filter((f) => /\.png$/i.test(f)).length;
+    } catch { /* katalog jeszcze nie istnieje — zero */ }
+
+    const portfolio = {
+      kreacji: 62 + kreacje.length,   // katalog Rady + wykute przez Krawcowa
+      narysowanych: wiz.length,
+      ofirmowanych,
+    };
+
+    res.json({
+      marki: marki.map((m) => ({ ...m, wycena: wycen(m, portfolio) })),
+      portfolio,
+      rogi: Object.keys(ROGI),
+    });
+  } catch (err: any) {
+    res.status(500).json({ error: String(err?.message ?? err) });
+  }
+});
+
+app.post('/api/marki', async (req, res) => {
+  try { res.json(await zapiszMarke(req.body ?? {})); }
+  catch (err: any) { res.status(400).json({ error: String(err?.message ?? err) }); }
+});
+
+app.delete('/api/marki/:id', async (req, res) => {
+  try { res.json(await usunMarke(req.params.id)); }
+  catch (err: any) { res.status(400).json({ error: String(err?.message ?? err) }); }
+});
+
+/** Wgraj logo. Plik idzie DANYMI (base64), nie sciezka — typ rozpoznajemy po zawartosci. */
+app.post('/api/marki/:id/logo', async (req, res) => {
+  const { base64, nazwaPliku } = req.body ?? {};
+  if (!base64) return res.status(400).json({ error: 'Brak pliku.' });
+  try { res.json(await wgrajLogo(req.params.id, base64, nazwaPliku)); }
+  catch (err: any) { res.status(400).json({ error: String(err?.message ?? err) }); }
+});
+
+/**
+ * Nałóż logo marki na kreację — Z AUTOMATU.
+ *
+ * ⚠️ ORYGINAŁ ZOSTAJE NIETKNIĘTY. Wynik to nowy plik w public/ofirmowane/.
+ */
+/**
+ * Podglad logo marki.
+ *
+ * ⚠️ SAMA NAZWA, nie sciezka — path.basename ucina wszystko poza nazwa pliku.
+ * Sciezka z zewnatrz to zaproszenie do `../../`.
+ */
+app.get('/api/marki/logo/:nazwa', (req, res) => {
+  const nazwa = path.basename(req.params.nazwa);
+  const cel = path.join(process.cwd(), 'OtakOs_Fashion', 'logo', nazwa);
+  if (!fs.existsSync(cel)) return res.status(404).send('Nie ma takiego logo.');
+  res.sendFile(cel);
+});
+
+app.post('/api/marki/naloz', async (req, res) => {
+  const { markaId, zrodloUrl, nazwa } = req.body ?? {};
+  if (!markaId || !zrodloUrl) return res.status(400).json({ error: 'Podaj markaId i zrodloUrl.' });
+  try {
+    const marka = (await wczytajMarki()).find((m) => m.id === markaId);
+    if (!marka) throw new Error('Nie ma takiej marki.');
+
+    // Kreacja żyje w Katedrze — ściągamy ją przez most do pliku tymczasowego.
+    const most = process.env.OTAKOS_MOST || 'http://127.0.0.1:3001';
+    const r = await fetch(`${most}${zrodloUrl}`, { signal: AbortSignal.timeout(60000) });
+    if (!r.ok) throw new Error(`Nie pobrałem kreacji: HTTP ${r.status}`);
+    const tmp = path.join(process.cwd(), 'OtakOs_Fashion', `_tmp_${Date.now()}.png`);
+    await fsp.mkdir(path.dirname(tmp), { recursive: true });
+    await fsp.writeFile(tmp, Buffer.from(await r.arrayBuffer()));
+
+    try {
+      res.json(await nalozLogo({ marka, zrodlo: tmp, nazwaWynikowa: nazwa || 'kreacja' }));
+    } finally {
+      await fsp.unlink(tmp).catch(() => {});
+    }
+  } catch (err: any) {
+    console.warn('[Marki] logo się nie nałożyło:', err?.message);
+    res.status(422).json({ error: String(err?.message ?? err) });
+  }
+});
+
 // ── 🖌️ KREACJA — narysowana sztuka odzieży ───────────────────────
 
 /** Co już narysowane. */

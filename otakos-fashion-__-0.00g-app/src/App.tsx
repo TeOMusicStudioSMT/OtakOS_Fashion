@@ -10,6 +10,7 @@ import { AiStylistLab } from './components/AiStylistLab';
 import { JsonCatalogViewer } from './components/JsonCatalogViewer';
 import { Galeria } from './components/Galeria';
 import { Kreacja } from './components/Kreacja';
+import { Marki } from './components/Marki';
 import { GarmentInspectorModal } from './components/GarmentInspectorModal';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { Sparkles, Terminal, Layers, ArrowUp, Info } from 'lucide-react';
@@ -158,6 +159,9 @@ function AppContent() {
 
         {/* Druga tafla — tu koncepcja staje się widoczną sztuką odzieży. */}
         {viewMode === 'kreacja' && <Kreacja pieces={filteredPieces} />}
+
+        {/* Trzecia tafla — kto to firmuje i ile jest warte. */}
+        {viewMode === 'marki' && <Marki />}
 
         {viewMode === 'runway-cards' && (
           <div className="space-y-6">

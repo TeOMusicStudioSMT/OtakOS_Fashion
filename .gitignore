@@ -23,3 +23,11 @@ otakos-fashion-__-0.00g-app/OtakOs_Fashion/kreacje.json
 *.tmp
 *.tmp.json
 .DS_Store
+
+# ── Dane instancji — wynik pracy, nie kod ───────────────────────────
+# Marki, wgrane logo, narysowane kreacje i ofirmowane pliki należą do TEJ
+# Katedry. W repozytorium byłyby cudzym portfolio i rosnącą górą PNG.
+otakos-fashion-__-0.00g-app/OtakOs_Fashion/marki.json
+otakos-fashion-__-0.00g-app/OtakOs_Fashion/wizualizacje.json
+otakos-fashion-__-0.00g-app/OtakOs_Fashion/logo/
+otakos-fashion-__-0.00g-app/public/ofirmowane/

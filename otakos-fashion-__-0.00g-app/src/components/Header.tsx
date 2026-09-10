@@ -114,6 +114,19 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             <button
+              onClick={() => setViewMode('marki')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono transition-all ${
+                viewMode === 'marki'
+                  ? 'bg-neutral-800 shadow-sm font-semibold'
+                  : 'text-neutral-400 hover:text-neutral-200'
+              }`}
+              style={viewMode === 'marki' ? { color: themeConfig.hex } : {}}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Galeria</span>
+            </button>
+
+            <button
               onClick={() => setViewMode('runway-cards')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono transition-all ${
                 viewMode === 'runway-cards'
