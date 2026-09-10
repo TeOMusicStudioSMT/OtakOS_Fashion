@@ -8,6 +8,7 @@ import { zaprojektuj as zaprojektujLokalnie, stanKrawca } from './krawiec-lokaln
 import { kadry as kadryProdukcji, projekty as projektyKatedry, wykuj, kreacje as wczytajKreacje } from './jajo-mody';
 import { narysuj, lista as wczytajWizualizacje } from './wizualizacje';
 import { przeglad } from './dozorca';
+import { obroc, lista as wczytajObroty, wariantyWzoru, DLUGOSCI as DLUGOSCI_OBROTU } from './obrot';
 import { lista as wczytajMarki, zapisz as zapiszMarke, usun as usunMarke, wgrajLogo, nalozLogo, wycen, ROGI } from './marki';
 
 /**
@@ -184,6 +185,42 @@ app.post('/api/marki/naloz', async (req, res) => {
 /** Co już narysowane. */
 app.get('/api/wizualizacje', async (_req, res) => {
   res.json({ wizualizacje: await wczytajWizualizacje() });
+});
+
+// ── 🔄 OBRÓT KREACJI — prezentacja produktu, nie pokaz mody ──────────
+
+/** Co już obrócone. */
+app.get('/api/obroty', async (_req, res) => {
+  res.json({ obroty: await wczytajObroty(), dlugosci: DLUGOSCI_OBROTU });
+});
+
+/**
+ * Obróć narysowaną kreację (Wan 2.2 TI2V-5B, i2v).
+ *
+ * ⚠️ TRWA MINUTY i to POŁĄCZENIE CZEKA — tak samo jak rysowanie. Zmierzone
+ * na tym sprzęcie: 49 klatek w 704×480 to ~171 s, obrót na testach 257 s.
+ */
+app.post('/api/obroc', async (req, res) => {
+  const { id, nazwa, pod, klatek, opis } = req.body ?? {};
+  if (!id || !nazwa) return res.status(400).json({ error: 'Podaj id kreacji i nazwę narysowanego pliku.' });
+  try {
+    res.json(await obroc({ id, nazwa, pod, klatek, opis }));
+  } catch (err: any) {
+    console.warn('[Obrót] nie obróciło się:', err?.message);
+    res.status(422).json({ error: String(err?.message ?? err) });
+  }
+});
+
+/**
+ * Warianty wzoru — dalsza obróbka skupiona na SAMYM UBRANIU.
+ *
+ * ⚠️ NIC TU NIE LICZY. Zwracamy przepisane opisy, które front podaje potem
+ * zwykłemu rysowaniu. Gdyby ta trasa udawała osobny silnik, byłaby atrapą.
+ */
+app.post('/api/warianty', (req, res) => {
+  const { prompt, ile } = req.body ?? {};
+  if (!prompt) return res.status(400).json({ error: 'Podaj opis kreacji, z którego mam zdjąć inscenizację.' });
+  res.json({ warianty: wariantyWzoru(String(prompt), Number(ile) || 3), silnik: 'przepisanie opisu (NIE AI)' });
 });
 
 /**

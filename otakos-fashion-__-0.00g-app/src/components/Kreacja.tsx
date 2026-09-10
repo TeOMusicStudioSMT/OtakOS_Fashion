@@ -22,10 +22,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { SolletPiece } from '../types';
 import { obrazDlaKlatki } from '../data/powiazania';
 import { useTheme } from '../context/ThemeContext';
-import { Brush, Loader2, AlertTriangle, Image as IkonaObrazu, Clock } from 'lucide-react';
+import { Brush, Loader2, AlertTriangle, Image as IkonaObrazu, Clock, RotateCw, Shirt, Wand2 } from 'lucide-react';
 import {
     pobierzWizualizacje, narysujKreacje, adresKadru,
-    type Wizualizacja,
+    pobierzObroty, obrocKreacje, pobierzWarianty,
+    type Wizualizacja, type Obrot, type DlugoscObrotu, type Wariant,
 } from '../services/kreacja';
 
 interface Props {
@@ -41,16 +42,26 @@ export function Kreacja({ pieces }: Props) {
     const [blad, setBlad] = useState('');
     const [odKiedy, setOdKiedy] = useState(0);
 
+    // ── Dalsza obróbka: obrót produktu i warianty wzoru ──
+    const [obroty, setObroty] = useState<Obrot[]>([]);
+    const [dlugosci, setDlugosci] = useState<DlugoscObrotu[]>([]);
+    const [klatek, setKlatek] = useState(49);
+    const [obraca, setObraca] = useState(false);
+    const [warianty, setWarianty] = useState<Wariant[]>([]);
+
     useEffect(() => {
         void pobierzWizualizacje().then(setWizualizacje).catch(() => setWizualizacje([]));
+        void pobierzObroty()
+            .then((d) => { setObroty(d.obroty); setDlugosci(d.dlugosci); })
+            .catch(() => setObroty([]));
     }, []);
 
     // Licznik sekund — przy czekaniu liczonym w minutach cisza wygląda jak zwis.
     useEffect(() => {
-        if (!rysuje) return;
+        if (!rysuje && !obraca) return;
         const t = window.setInterval(() => setOdKiedy((s) => s + 1), 1000);
         return () => window.clearInterval(t);
-    }, [rysuje]);
+    }, [rysuje, obraca]);
 
     const poId = useMemo(
         () => new Map(wizualizacje.map((w) => [w.id, w])),
@@ -80,7 +91,39 @@ export function Kreacja({ pieces }: Props) {
         }
     };
 
+    const obrotPoId = useMemo(() => new Map(obroty.map((o) => [o.id, o])), [obroty]);
+
+    /**
+     * ⚠️ Obrót wychodzi Z NARYSOWANEJ KREACJI, nie z opisu. Bez klatki startowej
+     * silnik wylosowałby inny strój, a panel pokazałby go jako „ten sam".
+     */
+    const obroc = async () => {
+        if (!wybrana || !wiz) return;
+        setObraca(true);
+        setOdKiedy(0);
+        setBlad('');
+        try {
+            const o = await obrocKreacje({ id: wybrana.id, nazwa: wiz.nazwa, klatek });
+            setObroty((prev) => [o, ...prev.filter((x) => x.id !== o.id)]);
+        } catch (e) {
+            setBlad(e instanceof Error ? e.message : String(e));
+        } finally {
+            setObraca(false);
+        }
+    };
+
+    const pokazWarianty = async () => {
+        setBlad('');
+        try {
+            const d = await pobierzWarianty(prompt, 4);
+            setWarianty(d.warianty);
+        } catch (e) {
+            setBlad(e instanceof Error ? e.message : String(e));
+        }
+    };
+
     const wiz = wybrana ? poId.get(wybrana.id) : null;
+    const obrot = wybrana ? obrotPoId.get(wybrana.id) : null;
     const kadr = wybrana ? obrazDlaKlatki(wybrana.keyframe) : null;
 
     return (
@@ -228,6 +271,140 @@ export function Kreacja({ pieces }: Props) {
                                 </div>
                             </div>
                         </div>
+
+                        {/* ── DALSZA OBRÓBKA ──────────────────────────────────────
+                            Suweren: „jak już wygeneruje, to można go przenieść do
+                            dalszej obróbki, by skupić się na samym ubraniu i innych
+                            wersjach tego wzoru".
+
+                            ⚠️ Pojawia się DOPIERO po narysowaniu. Obrót potrzebuje
+                            klatki startowej; oferowanie go wcześniej kończyłoby się
+                            błędem albo — gorzej — wylosowaniem innego stroju. */}
+                        {wiz && (
+                            <div
+                                className="rounded-3xl border backdrop-blur-2xl bg-white/[0.03] overflow-hidden"
+                                style={{ borderColor: themeConfig.borderHex }}
+                            >
+                                <div className="px-4 py-2.5 border-b flex items-center gap-2" style={{ borderColor: themeConfig.borderHex }}>
+                                    <Shirt size={12} style={{ color: themeConfig.hex }} />
+                                    <span className="text-[10px] font-mono font-bold tracking-wider" style={{ color: themeConfig.hex }}>
+                                        DALSZA OBRÓBKA — sam produkt, bez wybiegu
+                                    </span>
+                                </div>
+
+                                <div className="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                    {/* ── Obrót ── */}
+                                    <div className="space-y-2.5">
+                                        <div className="text-[9px] font-mono text-slate-500 leading-relaxed">
+                                            Obrót wychodzi z <span className="text-slate-300">narysowanej kreacji</span> jako klatki
+                                            startowej — kręci się TA suknia, nie podobna. Silnik: Wan 2.2 TI2V-5B (i2v, lokalnie).
+                                        </div>
+
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                            {dlugosci.map((d) => (
+                                                <button
+                                                    key={d.klatek}
+                                                    onClick={() => setKlatek(d.klatek)}
+                                                    disabled={obraca}
+                                                    className="px-2 py-1 rounded-lg text-[10px] font-mono transition-all cursor-pointer disabled:opacity-40"
+                                                    style={klatek === d.klatek
+                                                        ? { backgroundColor: themeConfig.subtleHex, color: themeConfig.hex, border: `1px solid ${themeConfig.borderHex}` }
+                                                        : { color: '#94a3b8', border: '1px solid transparent' }}
+                                                    title={d.opis}
+                                                >
+                                                    {d.klatek} kl.
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        <button
+                                            onClick={() => void obroc()}
+                                            disabled={obraca || rysuje}
+                                            className="w-full py-2.5 rounded-xl text-[11px] font-mono font-bold transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                                            style={{ backgroundColor: themeConfig.subtleHex, color: themeConfig.hex, border: `1px solid ${themeConfig.borderHex}` }}
+                                        >
+                                            {obraca
+                                                ? <><Loader2 size={12} className="animate-spin" /> OBRACA — {odKiedy}s</>
+                                                : <><RotateCw size={12} /> OBRÓĆ PRODUKT</>}
+                                        </button>
+
+                                        {/* ⚠️ Czas mówimy WPROST. Zmierzone na tym sprzęcie, nie obiecane. */}
+                                        <div className="text-[9px] font-mono text-slate-600 flex items-center gap-1.5">
+                                            <Clock size={9} />
+                                            {obraca
+                                                ? 'Wan liczy — na tej karcie zmierzono 171–257 s. Nie zamykaj karty.'
+                                                : 'Trwa 3–5 minut. Karta graficzna musi być wolna.'}
+                                        </div>
+
+                                        <div className="rounded-2xl border overflow-hidden" style={{ borderColor: themeConfig.borderHex }}>
+                                            <div className="px-3 py-1.5 text-[9px] font-mono text-slate-500 border-b flex items-center justify-between gap-2" style={{ borderColor: themeConfig.borderHex }}>
+                                                <span>OBRÓT PRODUKTU</span>
+                                                {obrot && <span className="text-slate-600">{obrot.silnik} · {obrot.sekundy}s</span>}
+                                            </div>
+                                            <div className="aspect-[4/3] bg-black/60">
+                                                {obrot
+                                                    ? (
+                                                        <video
+                                                            src={adresKadru(obrot.plik)}
+                                                            controls
+                                                            loop
+                                                            muted
+                                                            playsInline
+                                                            className="w-full h-full object-contain"
+                                                        />
+                                                    )
+                                                    : (
+                                                        <div className="w-full h-full flex items-center justify-center text-[9px] font-mono text-slate-700 text-center px-6 leading-relaxed">
+                                                            {obraca ? 'Wan obraca…' : 'Jeszcze nieobrócona.'}
+                                                        </div>
+                                                    )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* ── Warianty wzoru ── */}
+                                    <div className="space-y-2.5">
+                                        <div className="text-[9px] font-mono text-slate-500 leading-relaxed">
+                                            Warianty zdejmują z opisu wybieg, modelkę i inscenizację, zostawiając sam krój.
+                                            Kliknięcie wstawia opis do pola wyżej — potem zwykłe <span className="text-slate-300">NARYSUJ</span>.
+                                        </div>
+
+                                        <button
+                                            onClick={() => void pokazWarianty()}
+                                            disabled={!prompt.trim()}
+                                            className="w-full py-2 rounded-xl text-[11px] font-mono transition-all cursor-pointer disabled:opacity-40 flex items-center justify-center gap-2 border text-slate-300"
+                                            style={{ borderColor: themeConfig.borderHex }}
+                                        >
+                                            <Wand2 size={12} /> POKAŻ WERSJE TEGO WZORU
+                                        </button>
+
+                                        {/* ⚠️ Podpis mówi wprost: to przepisanie tekstu, nie model.
+                                            Bez tego wyglądałoby na „AI wymyśliło warianty". */}
+                                        {warianty.length > 0 && (
+                                            <div className="text-[9px] font-mono text-slate-600">
+                                                silnik: przepisanie opisu (NIE AI)
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
+                                            {warianty.map((w) => (
+                                                <button
+                                                    key={w.nazwa}
+                                                    onClick={() => setPrompt(w.prompt)}
+                                                    className="w-full text-left p-2.5 rounded-xl border bg-black/30 hover:bg-black/10 transition-all cursor-pointer"
+                                                    style={{ borderColor: themeConfig.borderHex }}
+                                                >
+                                                    <div className="text-[10px] font-bold" style={{ color: themeConfig.hex }}>{w.nazwa}</div>
+                                                    <div className="text-[9px] font-mono text-slate-500 line-clamp-2 leading-snug mt-0.5">
+                                                        {w.prompt}
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </>
                 )}
             </div>
