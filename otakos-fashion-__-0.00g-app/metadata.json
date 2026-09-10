@@ -1,0 +1,6 @@
+{
+  "name": "OtakOS Fashion // 0.00G Cathedral Couture Engine",
+  "description": "Haute couture cyber-alchemical fashion workstation and prompt synthesizer for the SOLLET 0.00G zero-gravity collection.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

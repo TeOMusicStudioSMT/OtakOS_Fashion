@@ -1,0 +1,577 @@
+{
+  "katalog": "OtakOS Fashion",
+  "kolekcja": "sollet-kadry-2026-09-09",
+  "zalozony": "2026-09-09T21:18:39.383Z",
+  "skad": {
+    "projekt": "SOLLET",
+    "etap": "KADR",
+    "silnik": "Wan 2.2 TI2V-5B (ComfyUI), jedna klatka — length: 1",
+    "uwaga": "Materiał POWSTAŁ jako klatki kluczowe do filmu, ale wymiar rozjechał się z resztą projektu (SOLLET jedzie w 704×480). Zamiast go skasować, trafia tutaj jako materiał wyjściowy dla działu mody."
+  },
+  "sztuk": 62,
+  "wymiary": {
+    "960x544": 61,
+    "704x480": 1
+  },
+  "bajtow": 23405338,
+  "pozycje": [
+    {
+      "plik": "001__1_17_Fale_Przestrzenne.png",
+      "tytul": "#1.17 Fale Przestrzenne",
+      "opis": "Wszystkie linie w kadrze falują jak fale. To nie jest statyczna zniekształcenie, lecz ciągła, aktywnie korygowana niestabilność fizyki.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 305855,
+      "powstal": "2026-09-09T20:39:39.049Z"
+    },
+    {
+      "plik": "001__1_1_Otwarcie__Ciemno__.png",
+      "tytul": "#1.1 Otwarcie: Ciemność",
+      "opis": "Całkowita czerń absorpcyjna. Pojedyncze, ostre, geometryczne linie migoczą w głębokiej, nienaturalnej zieleni. Światło jest niestabilne, falujące. Brak postaci.",
+      "szerokosc": 704,
+      "wysokosc": 480,
+      "bajtow": 93128,
+      "powstal": "2026-09-09T20:34:26.827Z"
+    },
+    {
+      "plik": "001__2_11_Glitch_Wzrostu.png",
+      "tytul": "#2.11 Glitch Wzrostu",
+      "opis": "Tło Pustyni zaczyna manifestować się jako nienaturalna, głęboka zieleń (glitch). Linie postaci są teraz bardziej szarpane i cyfrowe.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 283824,
+      "powstal": "2026-09-09T20:42:55.532Z"
+    },
+    {
+      "plik": "002__2_12_Powierzchnia_Zniekszta_cona.png",
+      "tytul": "#2.12 Powierzchnia Zniekształcona",
+      "opis": "Zbliżenie na powierzchnię między postaciami. Granica jest płynna, migocząca między ostrej linią a cyfrowym szumem.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 389429,
+      "powstal": "2026-09-09T20:43:16.725Z"
+    },
+    {
+      "plik": "003__2_13_Fale__wiat_a.png",
+      "tytul": "#2.13 Fale Światła",
+      "opis": "Ciepłe światło Pustyni ulega falowaniu, stając się ostrymi, geometrycznymi falami, które rozchodzą się w obszarze interakcji.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 551877,
+      "powstal": "2026-09-09T20:43:39.839Z"
+    },
+    {
+      "plik": "004__2_14_Napi_cie_Geometryczne.png",
+      "tytul": "#2.14 Napięcie Geometryczne",
+      "opis": "Solita manifestuje się jako złożona struktura z migoczącego materiału. Jej krawędzie tworzą falujące, geometryczne artefakty w otoczeniu.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 555031,
+      "powstal": "2026-09-09T20:44:05.517Z"
+    },
+    {
+      "plik": "005__2_15_Odbicie_Anomalii.png",
+      "tytul": "#2.15 Odbicie Anomalii",
+      "opis": "Molitą otacza niebieski, anomalia światła, który jest ostre i nasycony. Jej kształt jest częściowo rozmyty przez ten zimny kontrapunkt.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 395208,
+      "powstal": "2026-09-09T20:44:30.631Z"
+    },
+    {
+      "plik": "006__2_16_Kontrast_Kolor_w.png",
+      "tytul": "#2.16 Kontrast Kolorów",
+      "opis": "Dramatyczny kontrast: głęboka zieleń (glitch) zderza się z ostrym, nasyconym błękitem (anomalia). Kolory są chirurgicznie rozdzielone.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 146973,
+      "powstal": "2026-09-09T20:44:56.389Z"
+    },
+    {
+      "plik": "007__2_17_P_kni_cia_Rzeczywisto_ci.png",
+      "tytul": "#2.17 Pęknięcia Rzeczywistości",
+      "opis": "Widoczne są ciche, geometryczne anomalie przestrzenne – mikroskopijne pęknięcia w tkaninie rzeczywistości, manifestujące napięcie alchemii.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 252863,
+      "powstal": "2026-09-09T20:45:22.796Z"
+    },
+    {
+      "plik": "008__2_18_Aktywna_Korekta.png",
+      "tytul": "#2.18 Aktywna Korekta",
+      "opis": "Kadrowo pokazane jest, jak przestrzeń aktywnie koryguje się. Linia prosta w tle faluje, próbując się dostosować do niestabilnej interakcji.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 390474,
+      "powstal": "2026-09-09T20:45:48.797Z"
+    },
+    {
+      "plik": "009__2_19_Wzajemne_Zniekszta_cenie.png",
+      "tytul": "#2.19 Wzajemne Zniekształcenie",
+      "opis": "Postacie są w pełni przeniknięte niestabilnością. Sylwetka Solity jest geometrycznym artefaktem, a Molita jest rozmyciem zniekształconym przez Solitę.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 427526,
+      "powstal": "2026-09-09T20:46:14.454Z"
+    },
+    {
+      "plik": "010__2_20_P_ynne_Granice.png",
+      "tytul": "#2.20 Płynne Granice",
+      "opis": "Granice między postaciami są całkowicie płynne i podatne na zniekształcenie. Cień Solity rozlewa się w falującą, cyfrową materię.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 334472,
+      "powstal": "2026-09-09T20:46:40.051Z"
+    },
+    {
+      "plik": "011__2_21_Przesuni_cie_Perspektywy.png",
+      "tytul": "#2.21 Przesunięcie Perspektywy",
+      "opis": "Cały kadr jest zniekształcony. Wszystkie linie geometryczne przesuwają się w niepojęte, falujące krzywe, oddając ruch i niestabilność.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 256272,
+      "powstal": "2026-09-09T20:47:04.839Z"
+    },
+    {
+      "plik": "012__2_22_Kulminacja_Glitchu.png",
+      "tytul": "#2.22 Kulminacja Glitchu",
+      "opis": "Intensywny glitch. Cała scena jest migoczącym, geometrycznym chaosem. Ciepłe i zimne światła wirują wokół centralnego punktu wymiany energetycznej.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 397691,
+      "powstal": "2026-09-09T20:47:30.065Z"
+    },
+    {
+      "plik": "013__2_23_Ostatnie_Napi_cie.png",
+      "tytul": "#2.23 Ostatnie Napięcie",
+      "opis": "Solita i Molita zawieszone w stanie maksymalnego napięcia. Kontrast między ciepłem Pustyni a cyfrowym zimnem jest bolesny i nieustalny.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 429515,
+      "powstal": "2026-09-09T20:47:55.509Z"
+    },
+    {
+      "plik": "014__2_24_Zako_czenie___Zmierzch.png",
+      "tytul": "#2.24 Zakończenie / Zmierzch",
+      "opis": "Ostateczny obraz: Niestabilna mgła zgasza się powoli, pozostawiając jedynie subtelną, geometryczną anomalię w głębokim, niestabilnym zmierzchu.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 325288,
+      "powstal": "2026-09-09T20:48:21.121Z"
+    },
+    {
+      "plik": "015__3_1_Wst_p_do_niestabilno_ci.png",
+      "tytul": "#3.1 Wstęp do niestabilności",
+      "opis": "Głęboka, nienaturalna zieleń (glitch) wypełnia ekran. Bardzo wolne, pulsujące rozmycie. Ciemne tło. Ciepłe, niestabilne pomarańcze w tle. Powolne, ambientowe ujęcie miejsca.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 361742,
+      "powstal": "2026-09-09T20:48:46.505Z"
+    },
+    {
+      "plik": "016__3_2_Powstanie_cienia.png",
+      "tytul": "#3.2 Powstanie cienia",
+      "opis": "Zbliżenie na krawędź cienia. Linie cienia drżą i falują, tworząc geometryczne artefakty w czerni. Światło jest niestabilne.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 377251,
+      "powstal": "2026-09-09T20:49:11.769Z"
+    },
+    {
+      "plik": "017__3_3_Solita_-_Obw_d.png",
+      "tytul": "#3.3 Solita - Obwód",
+      "opis": "Sylwetka Solity, zbudowana z pulsującego, migoczącego materiału. Krawędzie cienia wokół niej drżą, tworząc falujące, geometryczne artefakty.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 669501,
+      "powstal": "2026-09-09T20:49:36.723Z"
+    },
+    {
+      "plik": "018__3_4_Anomalia_b__kitu.png",
+      "tytul": "#3.4 Anomalia błękitu",
+      "opis": "Ostre, nasycone błękitne światło przebija się przez zniekształcone tło. Kontrast jest chirurgiczny.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 244016,
+      "powstal": "2026-09-09T20:50:02.123Z"
+    },
+    {
+      "plik": "019__3_5_Molita_-_Rozmycie.png",
+      "tytul": "#3.5 Molita - Rozmycie",
+      "opis": "Zbliżenie na Sylwetkę Molity. Postać jest krucha, przypomina rozmycie. Linie w otoczeniu postaci zniekształcają się w falujące krzywe.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 515725,
+      "powstal": "2026-09-09T20:50:28.005Z"
+    },
+    {
+      "plik": "020__3_6_Fizyczne_p_kni_cie.png",
+      "tytul": "#3.6 Fizyczne pęknięcie",
+      "opis": "Widoczne pęknięcie w przestrzeni. Linie geometryczne świata falują. Czerń absorpcyjna dominuje.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 236087,
+      "powstal": "2026-09-09T20:50:53.529Z"
+    },
+    {
+      "plik": "021__3_7_Interakcja_fal.png",
+      "tytul": "#3.7 Interakcja fal",
+      "opis": "Powolne ujęcie, pokazujące, jak fale niestabilności Solity bezpośrednio oddziałują na przestrzeń wokół Molity.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 405546,
+      "powstal": "2026-09-09T20:51:21.790Z"
+    },
+    {
+      "plik": "022__3_8_Alchemiczne_ciep_o.png",
+      "tytul": "#3.8 Alchemiczne ciepło",
+      "opis": "Ostre, ciepłe pomarańcze (alchemia) pulsują w tle. Światło jest niestabilne, tańczy z niepokojącą zielenią glitchu.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 335139,
+      "powstal": "2026-09-09T20:51:51.909Z"
+    },
+    {
+      "plik": "023__3_9_Granice_zniekszta_cone.png",
+      "tytul": "#3.9 Granice zniekształcone",
+      "opis": "Bliskość Solity i Molity. Granice między nimi są płynne i podatne na zniekształcenie. Widoczne jest migotanie granic.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 388357,
+      "powstal": "2026-09-09T20:52:22.262Z"
+    },
+    {
+      "plik": "024__3_10_Glitch_Solity.png",
+      "tytul": "#3.10 Glitch Solity",
+      "opis": "Zbliżenie na materiał Solity. Materiał migocze, linie wewnętrzne zniekształcają się w cyfrowe artefakty (glitch).",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 677308,
+      "powstal": "2026-09-09T20:52:49.005Z"
+    },
+    {
+      "plik": "025__3_11_Perspektywa_Molity.png",
+      "tytul": "#3.11 Perspektywa Molity",
+      "opis": "Ujęcie na Molitę. Przestrzeń wokół niej jest mocno zniekształcona, linie proste stają się falującymi krzywymi.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 393179,
+      "powstal": "2026-09-09T20:53:19.640Z"
+    },
+    {
+      "plik": "026__3_12_Symetria_niestabilno_ci.png",
+      "tytul": "#3.12 Symetria niestabilności",
+      "opis": "Kontrast między geometryczną niestabilnością Solity a falującą niestabilnością Molity. Cała scena jest geometrycznym chaosem.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 425232,
+      "powstal": "2026-09-09T20:53:49.909Z"
+    },
+    {
+      "plik": "027__3_13_Ciemna_przestrze_.png",
+      "tytul": "#3.13 Ciemna przestrzeń",
+      "opis": "Bardzo ciemny kadr, dominująca czerń absorpcyjna. Tylko subtelne, falujące kontury postaci widać w tle.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 331982,
+      "powstal": "2026-09-09T20:54:20.109Z"
+    },
+    {
+      "plik": "028__3_14_Migotanie_koloru.png",
+      "tytul": "#3.14 Migotanie koloru",
+      "opis": "Ostre, niestabilne migotanie kolorów – zieleń, błękit, pomarańcz – tworzące efekt wizualnej anomalii.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 210355,
+      "powstal": "2026-09-09T20:54:47.429Z"
+    },
+    {
+      "plik": "029__3_15_Po__czenie_cieni.png",
+      "tytul": "#3.15 Połączenie cieni",
+      "opis": "Długie, płynne cienie Solity i Molity przenikają się, tworząc niejednoznaczne, falujące formy.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 297392,
+      "powstal": "2026-09-09T20:55:14.559Z"
+    },
+    {
+      "plik": "030__3_16_Alchemia_w_ruchu.png",
+      "tytul": "#3.16 Alchemia w ruchu",
+      "opis": "Napięcie alchemii manifestuje się jako ciche, geometryczne pęknięcia w powietrzu między postaciami.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 192292,
+      "powstal": "2026-09-09T20:55:40.235Z"
+    },
+    {
+      "plik": "031__3_17_Wewn_trzny_glitch.png",
+      "tytul": "#3.17 Wewnętrzny glitch",
+      "opis": "Zbliżenie na wewnętrzne tło Solity. Wzór glitchu jest bardziej intensywny, sugerując niestabilność w istnieniu.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 815853,
+      "powstal": "2026-09-09T20:56:06.219Z"
+    },
+    {
+      "plik": "032__3_18_Krucho___Molity.png",
+      "tytul": "#3.18 Kruchość Molity",
+      "opis": "Molita jako główny punkt. Jej postać wydaje się być niestabilna, granice postaci rozmyte w falach światła.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 466796,
+      "powstal": "2026-09-09T20:56:31.829Z"
+    },
+    {
+      "plik": "033__3_19_Odbicie_niestabilno_ci.png",
+      "tytul": "#3.19 Odbicie niestabilności",
+      "opis": "Odbicie falowania Solity w powierzchni Molity. Wzajemne przenikanie się niestabilności.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 360203,
+      "powstal": "2026-09-09T20:56:57.314Z"
+    },
+    {
+      "plik": "034__3_20__wiat_o_niestabilne.png",
+      "tytul": "#3.20 Światło niestabilne",
+      "opis": "Źródło światła jest niestabilne, falujące, wydaje się emanować z wnętrza każdej postaci. Nieokreślone źródło w wiecznym zmierzchu.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 119065,
+      "powstal": "2026-09-09T20:57:22.619Z"
+    },
+    {
+      "plik": "035__3_21_Dalsza_deformacja.png",
+      "tytul": "#3.21 Dalsza deformacja",
+      "opis": "Całe tło jest zniekształcone. Geometyczne linie świata ulegają całkowitemu falowaniu.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 256439,
+      "powstal": "2026-09-09T20:57:48.225Z"
+    },
+    {
+      "plik": "036__3_22_Aktywne_korekty.png",
+      "tytul": "#3.22 Aktywne korekty",
+      "opis": "Sugerowanie ciągłej, aktywnej korekty niestabilności. Postacie reagują na fizyczną niestabilność otoczenia.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 259858,
+      "powstal": "2026-09-09T20:58:13.695Z"
+    },
+    {
+      "plik": "037__3_23_Kulminacja_napi_cia.png",
+      "tytul": "#3.23 Kulminacja napięcia",
+      "opis": "Najbardziej intensywny moment wizualnego napięcia. Kontrasty między ostrością cienia a falującymi teksturami są maksymalne.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 243482,
+      "powstal": "2026-09-09T20:58:39.629Z"
+    },
+    {
+      "plik": "038__3_24_Zako_czenie_w_zmierzchu.png",
+      "tytul": "#3.24 Zakończenie w zmierzchu",
+      "opis": "Powolne wygaszenie napięcia. Wszystkie elementy powracają do głębokiego, niestabilnego zmierzchu. Ostatnie, ciche, falujące światło.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 354486,
+      "powstal": "2026-09-09T20:59:04.989Z"
+    },
+    {
+      "plik": "039__4_1_Wprowadzenie_do_przestrzeni.png",
+      "tytul": "#4.1 Wprowadzenie do przestrzeni",
+      "opis": "Głęboka, nienaturalna zieleń wypełnia kadr. Światło jest niestabilne. Widzimy geometryczne, ostre linie, które natychmiast zaczynają falować i zniekształcać się w krawędziach. Ciemna przestrzeń zniekształcona.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 254606,
+      "powstal": "2026-09-09T20:59:30.780Z"
+    },
+    {
+      "plik": "040__4_2_Wej_cie_do_klubu.png",
+      "tytul": "#4.2 Wejście do klubu",
+      "opis": "Szeroki kadr wnętrza klubu. Czerń absorpcyjna dominuje, przebijana ostrym, nasyconym błękitem. Powietrze zdaje się falować. Artefakty cyfrowe migoczą w tle.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 403917,
+      "powstal": "2026-09-09T20:59:56.499Z"
+    },
+    {
+      "plik": "041__4_3_Solita_w_cieniu.png",
+      "tytul": "#4.3 Solita w cieniu",
+      "opis": "Zbliżenie na Solitę. Sylwetka płynna, zbudowana z migoczącego, pulsującego materiału. Krawędzie cienia Solity ciągle drżą, tworząc falujące, geometryczne artefakty w bezpośrednim otoczeniu.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 546595,
+      "powstal": "2026-09-09T21:00:22.260Z"
+    },
+    {
+      "plik": "042__4_4_Molita_w_ruchu.png",
+      "tytul": "#4.4 Molita w ruchu",
+      "opis": "Molita wchodzi w kadr. Sylwetka jest krucha, przypomina rozmycie. Otoczenie Molity manifestuje się jako przesunięcie perspektywy, linie proste w tle zniekształcają się w falujące krzywe.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 587791,
+      "powstal": "2026-09-09T21:00:47.628Z"
+    },
+    {
+      "plik": "043__4_5_Wsp_lne_pole.png",
+      "tytul": "#4.5 Wspólne pole",
+      "opis": "Solita i Molita wchodzą w interakcję. Granice między nimi są płynne i podatne na zniekształcenie. Ciemne, alchemiczne pęknięcia światła rozchodzą się między ich sylwetkami.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 376624,
+      "powstal": "2026-09-09T21:01:13.538Z"
+    },
+    {
+      "plik": "044__4_6__ciana_z_glitchu.png",
+      "tytul": "#4.6 Ściana z glitchu",
+      "opis": "Kadr skupiony na ścianie klubu. Zieleń zniekształcenia fizyki jest intensywna, tworząc geometryczne, cyfrowe wzory na powierzchni. Kontrast jest chirurgiczny.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 404066,
+      "powstal": "2026-09-09T21:01:39.320Z"
+    },
+    {
+      "plik": "045__4_7_Alchemiczne__wiat_o.png",
+      "tytul": "#4.7 Alchemiczne światło",
+      "opis": "Światło ciepłego, niestabilnego pomarańczu przebija się przez zniekształcone światło, tworząc falujące cienie. Materia wokół postaci pulsuje.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 252963,
+      "powstal": "2026-09-09T21:02:05.108Z"
+    },
+    {
+      "plik": "046__4_8_Niestabilne_cienie.png",
+      "tytul": "#4.8 Niestabilne cienie",
+      "opis": "Zbliżenie na cienie rzucane przez Solitę. Cienie drgają i rozpraszają się w geometryczne anomalie, uniemożliwiając określenie ich stałej formy.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 700997,
+      "powstal": "2026-09-09T21:02:30.346Z"
+    },
+    {
+      "plik": "047__4_9_Przesuni_cie_perspektywy.png",
+      "tytul": "#4.9 Przesunięcie perspektywy",
+      "opis": "Molita stoi, jej otoczenie jest silnie zniekształcone. Linia horyzontu faluje, co wzmacnia wrażenie niestabilności przestrzeni.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 468410,
+      "powstal": "2026-09-09T21:02:56.460Z"
+    },
+    {
+      "plik": "048__4_10_Efekt_rozmycia.png",
+      "tytul": "#4.10 Efekt rozmycia",
+      "opis": "Kadr pokazujący rozmycie Molity, jej kształt jest niestabilny, jakby był rozpuszczany w otaczającej rzeczywistości. Zieleń glitchu dominuje nad cieniem.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 340399,
+      "powstal": "2026-09-09T21:03:21.566Z"
+    },
+    {
+      "plik": "049__4_11_Konfrontacja_cieni.png",
+      "tytul": "#4.11 Konfrontacja cieni",
+      "opis": "Solita i Molita stoją naprzeciw siebie. Ich sylwetki nakładają się, tworząc geometryczne nakładki, których granice są niestabilne. Kontrast między nimi jest maksymalny.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 387054,
+      "powstal": "2026-09-09T21:03:47.122Z"
+    },
+    {
+      "plik": "050__4_12_Wzrost_napi_cia.png",
+      "tytul": "#4.12 Wzrost napięcia",
+      "opis": "Zbliżenie na punkt styku postaci. W miejscu ich kontaktu manifestuje się małe, geometryczne pęknięcia, wizualizujące napięcie alchemii.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 214870,
+      "powstal": "2026-09-09T21:04:13.261Z"
+    },
+    {
+      "plik": "051__4_13_Fizyka_p_kni_ta.png",
+      "tytul": "#4.13 Fizyka pęknięta",
+      "opis": "Wprowadzenie dużego artefaktu glitchu w kadrze. Ostre, geometryczne linie rzeczywistości pękają, tworząc falujące, cyfrowe tekstury w całym otoczeniu.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 287055,
+      "powstal": "2026-09-09T21:04:40.334Z"
+    },
+    {
+      "plik": "052__4_14_Zniekszta_cone__wiat_o.png",
+      "tytul": "#4.14 Zniekształcone światło",
+      "opis": "Źródło światła w klubie jest całkowicie niestabilne, migoczące między błękitem a niestabilnym pomarańczem. Światło tworzy falujące, geometryczne wzory na powierzchniach.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 290118,
+      "powstal": "2026-09-09T21:05:05.425Z"
+    },
+    {
+      "plik": "053__4_15_Ruch_w_niestabilno_ci.png",
+      "tytul": "#4.15 Ruch w niestabilności",
+      "opis": "Solita porusza się. Jej ruch powoduje falowanie otaczających ją artefaktów cyfrowych, co potęguje wrażenie płynności i niestabilności jej formy.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 561370,
+      "powstal": "2026-09-09T21:05:31.579Z"
+    },
+    {
+      "plik": "054__4_16_Wp_yw_na_otoczenie.png",
+      "tytul": "#4.16 Wpływ na otoczenie",
+      "opis": "Molita obserwuje Solitę. Jej cienie wyginają się w geometryczne kształty, odbijając zniekształcenie fizyki. Cała scena jest dynamiczną grą falujących linii.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 501304,
+      "powstal": "2026-09-09T21:05:57.541Z"
+    },
+    {
+      "plik": "055__4_17_Alchemia_w_przestrzeni.png",
+      "tytul": "#4.17 Alchemia w przestrzeni",
+      "opis": "Szerszy kadr pokazujący, jak niestabilność przestrzeni wpływa na całe środowisko klubu. Czerń absorpcyjna jest przerywana migoczącymi, niestabilnymi kolorami.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 416206,
+      "powstal": "2026-09-09T21:06:22.605Z"
+    },
+    {
+      "plik": "056__4_18_Migotanie_rzeczywisto_ci.png",
+      "tytul": "#4.18 Migotanie rzeczywistości",
+      "opis": "Wszystkie obiekty w kadrze migoczą, jako chaotyczne cyfrowe artefakty. Światło jest niestabilne, a cienie są niestabilne. Intensywny kontrast.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 276550,
+      "powstal": "2026-09-09T21:06:50.315Z"
+    },
+    {
+      "plik": "057__4_19_Punkt_kulminacyjny_glitchu.png",
+      "tytul": "#4.19 Punkt kulminacyjny glitchu",
+      "opis": "Ekstremalne zniekształcenie fizyki. Linie rzeczywistości w kadrze są niemal całkowicie rozbite, tworząc gęstą siatkę cyfrowych artefaktów w miejscach, gdzie Solita i Molita się spotykają.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 474765,
+      "powstal": "2026-09-09T21:07:19.575Z"
+    },
+    {
+      "plik": "058__4_20_Fala_niestabilno_ci.png",
+      "tytul": "#4.20 Fala niestabilności",
+      "opis": "Zbliżenie na falujący obszar między postaciami. To tutaj granice między Solitą a Molitą są najbardziej płynne i najbardziej zniekształcone, jak płynna ciecz.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 501146,
+      "powstal": "2026-09-09T21:07:47.838Z"
+    },
+    {
+      "plik": "059__4_21_Powr_t_do_materii.png",
+      "tytul": "#4.21 Powrót do materii",
+      "opis": "Napięcie alchemiczne lekko ustępuje, ale pozostaje widoczne jako subtelne, geometryczne pęknięcia w tle. Zieleń i błękit utrzymują dominację.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 419525,
+      "powstal": "2026-09-09T21:08:18.052Z"
+    },
+    {
+      "plik": "060__4_22_Zmierzch_i_artefakty.png",
+      "tytul": "#4.22 Zmierzch i artefakty",
+      "opis": "Powrót do ogólnego widoku. Wieczny zmierzch. Oświetlenie jest niestabilne, a wszystko w otoczeniu niesie widoczne cyfrowe artefakty.",
+      "szerokosc": 960,
+      "wysokosc": 544,
+      "bajtow": 266295,
+      "powstal": "2026-09-09T21:08:48.164Z"
+    }
+  ]
+}

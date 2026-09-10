@@ -1,0 +1,25 @@
+# ── Zależności i wyniki budowania ────────────────────────────────────────────
+node_modules/
+dist/
+*.log
+
+# ── Sekrety ──────────────────────────────────────────────────────────────────
+# ⚠️ NIGDY nie commitujemy kluczy. Chmura jest tu i tak wyłączona domyślnie,
+# ale plik .env potrafi przyjechać z cudzego szablonu.
+.env
+.env.*
+!.env.example
+
+# ── Materiał generowany ──────────────────────────────────────────────────────
+# `public/kadry/` to KOPIA obrazów z `katalog/`, robiona przez
+# scripts/zwiaz-obrazy.mjs. Trzymanie dwóch kopii w repozytorium to 23 MB
+# duplikatu i dwa źródła prawdy o tym, która wersja jest aktualna.
+otakos-fashion-__-0.00g-app/public/kadry/
+
+# Kreacje wykute przez Jajo — wynik pracy, nie kod. Rosną z każdym kuciem.
+otakos-fashion-__-0.00g-app/OtakOs_Fashion/kreacje.json
+
+# ── Pliki tymczasowe ─────────────────────────────────────────────────────────
+*.tmp
+*.tmp.json
+.DS_Store
