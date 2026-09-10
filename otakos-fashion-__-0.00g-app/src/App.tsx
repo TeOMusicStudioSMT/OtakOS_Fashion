@@ -9,6 +9,7 @@ import { MoodboardView } from './components/MoodboardView';
 import { AiStylistLab } from './components/AiStylistLab';
 import { JsonCatalogViewer } from './components/JsonCatalogViewer';
 import { Galeria } from './components/Galeria';
+import { Kreacja } from './components/Kreacja';
 import { GarmentInspectorModal } from './components/GarmentInspectorModal';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { Sparkles, Terminal, Layers, ArrowUp, Info } from 'lucide-react';
@@ -134,7 +135,7 @@ function AppContent() {
       />
 
       {/* Filter and Query Bar (visible in cards, matrix, and moodboard views) */}
-      {(viewMode === 'galeria' || viewMode === 'runway-cards' || viewMode === 'blueprint-matrix' || viewMode === 'moodboard') && (
+      {(viewMode === 'galeria' || viewMode === 'kreacja' || viewMode === 'runway-cards' || viewMode === 'blueprint-matrix' || viewMode === 'moodboard') && (
         <FilterBar
           selectedArchetype={selectedArchetype}
           setSelectedArchetype={setSelectedArchetype}
@@ -154,6 +155,9 @@ function AppContent() {
         {viewMode === 'galeria' && (
           <Galeria pieces={filteredPieces} onWybierz={setInspectingPiece} />
         )}
+
+        {/* Druga tafla — tu koncepcja staje się widoczną sztuką odzieży. */}
+        {viewMode === 'kreacja' && <Kreacja pieces={filteredPieces} />}
 
         {viewMode === 'runway-cards' && (
           <div className="space-y-6">

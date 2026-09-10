@@ -1,0 +1,13 @@
+{
+  "wizualizacje": [
+    {
+      "id": "SOLLET-KF01",
+      "nazwa": "kadr_00201_.png",
+      "plik": "/api/obraz/plik?nazwa=kadr_00201_.png&pod=katedra",
+      "prompt": "haute couture lookbook: vantablack carbon micro-velvet column sheath, origami-creased rigid panels, electroluminescent neon green filament sutures along the fracture seams, mirror-finish chromium titanium edges, severed shoulder mantle floating above the clavicle, black seamless studio background, garment only, no face, sharp fabric texture",
+      "silnik": "FLUX.2 [klein] 4B",
+      "sekundy": 111,
+      "narysowane": "2026-09-10T12:39:00.348Z"
+    }
+  ]
+}

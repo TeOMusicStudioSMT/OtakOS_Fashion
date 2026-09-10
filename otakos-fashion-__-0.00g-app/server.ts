@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { GoogleGenAI, Type } from '@google/genai';
 import { zaprojektuj as zaprojektujLokalnie, stanKrawca } from './krawiec-lokalny';
 import { kadry as kadryProdukcji, projekty as projektyKatedry, wykuj, kreacje as wczytajKreacje } from './jajo-mody';
+import { narysuj, lista as wczytajWizualizacje } from './wizualizacje';
 
 /**
  * ⚠️ CHMURA JEST WYŁĄCZONA DOMYŚLNIE.
@@ -63,6 +64,32 @@ app.get('/api/health', (req, res) => {
 /**
  * Czym dziś projektujemy — żeby panel nie obiecywał kreacji, której nie ma jak policzyć.
  */
+// ── 🖌️ KREACJA — narysowana sztuka odzieży ───────────────────────
+
+/** Co już narysowane. */
+app.get('/api/wizualizacje', async (_req, res) => {
+  res.json({ wizualizacje: await wczytajWizualizacje() });
+});
+
+/**
+ * Narysuj kreację z jej `imagePrompt`.
+ *
+ * ⚠️ TRWA MINUTY i to POLACZENIE CZEKA. Zmierzone na FLUX.2 klein: 57–407 s
+ * zależnie od wolnego VRAM-u. Odpytywanie z przeglądarki co sekundę przez
+ * siedem minut to setki zapytań; jedno długie połączenie jest prostsze
+ * i nie gubi wyniku przy odświeżeniu karty.
+ */
+app.post('/api/narysuj', async (req, res) => {
+  const { id, prompt, silnik, szerokosc, wysokosc, ziarno } = req.body ?? {};
+  if (!id || !prompt) return res.status(400).json({ error: 'Podaj id i prompt.' });
+  try {
+    res.json(await narysuj({ id, prompt, silnik, szerokosc, wysokosc, ziarno }));
+  } catch (err: any) {
+    console.warn('[Kreacja] nie narysowało się:', err?.message);
+    res.status(422).json({ error: String(err?.message ?? err) });
+  }
+});
+
 // ── 🥚 JAJO MODY — okno na kadry produkcji ─────────────────────────
 
 /** Projekty widziane przez most Katedry. */
