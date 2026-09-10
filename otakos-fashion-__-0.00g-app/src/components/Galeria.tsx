@@ -22,6 +22,7 @@ import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { SolletPiece } from '../types';
 import { obrazDlaKlatki, METODA_WIAZANIA, ZE_ZDJECIEM } from '../data/powiazania';
 import { useTheme } from '../context/ThemeContext';
+import { Lupa } from './Lupa';
 import { ImageOff, Layers, Sparkles, Info, Hammer, Loader2, RefreshCw, AlertTriangle } from 'lucide-react';
 import {
     pobierzProjekty, pobierzKadry, pobierzKreacje, wykujZKadru, adresKadru,
@@ -182,10 +183,10 @@ export function Galeria({ pieces, onWybierz }: Props) {
                             <div className="space-y-2">
                                 {kute.map((k) => (
                                     <div key={k.id} className="p-3 rounded-2xl border bg-black/30 flex gap-3" style={{ borderColor: themeConfig.borderHex }}>
-                                        <img
+                                        <Lupa
                                             src={adresKadru(k.zKadru.plik)}
                                             alt={k.zKadru.tytul}
-                                            className="w-24 h-20 object-cover rounded-xl shrink-0 bg-black/60"
+                                            className="w-24 h-20 rounded-xl shrink-0 bg-black/60"
                                         />
                                         <div className="min-w-0 space-y-1">
                                             <div className="text-[11px] font-bold text-slate-100">{k.title}</div>
@@ -206,7 +207,7 @@ export function Galeria({ pieces, onWybierz }: Props) {
                             {kadry.slice(0, 60).map((k) => (
                                 <div key={k.id} className="rounded-xl overflow-hidden border bg-black/40" style={{ borderColor: themeConfig.borderHex }}>
                                     <div className="aspect-[4/3] bg-black/60">
-                                        <img src={adresKadru(k.plik)} alt={k.tytul} loading="lazy" className="w-full h-full object-cover" />
+                                        <Lupa src={adresKadru(k.plik)} alt={k.tytul} className="w-full h-full" />
                                     </div>
                                     <div className="p-1.5">
                                         <div className="text-[9px] font-mono text-slate-400 truncate">{k.tytul}</div>
@@ -260,11 +261,11 @@ export function Galeria({ pieces, onWybierz }: Props) {
                                     >
                                         <div className="aspect-[4/3] bg-black/60 overflow-hidden">
                                             {o?.plik ? (
-                                                <img
+                                                <Lupa
                                                     src={o.plik}
                                                     alt={p.title}
-                                                    loading="lazy"
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                    className="w-full h-full"
+                                                    pelnyPodglad={false}
                                                 />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center text-[9px] font-mono text-slate-700">
