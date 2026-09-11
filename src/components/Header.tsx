@@ -1,5 +1,8 @@
 /**
- * Nagłówek OtakOS Fashion.
+ * Nagłówek TeO Fashion Studio.
+ *
+ * OtakOS to nazwa SILNIKA, Katedry i Uniwersum — nie studia. Studia noszą nazwy
+ * TeO (Story, Music, App, Games, Fashion); „OtakOS" zostaje w znaczku 0.00G.
  *
  * ⚠️ NAPRAWIONY BŁĄD: cztery różne widoki nosiły podpis „Galeria". Kafelek został
  * skopiowany przy dodawaniu zakładek i podpisu nikt nie zmienił — menu wyglądało
@@ -63,7 +66,7 @@ export const Header: React.FC<HeaderProps> = ({
                 {/* ── Znak firmowy ── */}
                 <div className="flex items-baseline gap-2.5">
                     <span className="font-syne text-base font-extrabold uppercase tracking-[0.18em] text-white">
-                        OtakOS Fashion
+                        TeO Fashion Studio
                     </span>
                     <span
                         className="rounded border px-1.5 py-0.5 font-mono text-[9px] tracking-wider transition-colors"

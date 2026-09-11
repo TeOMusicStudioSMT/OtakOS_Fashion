@@ -138,7 +138,7 @@ ${aestheticSummary.dominantSilhouettes.map((s) => `• ${s.name} (${s.count}x)`)
               <div className="flex items-center gap-2">
                 <Palette className="w-4 h-4 text-[#00ff66]" />
                 <span className="font-mono text-xs text-[#00ff66] uppercase tracking-widest font-semibold">
-                  OtakOS Fashion // Curatorial Moodboard & Chromatic Codex
+                  TeO Fashion Studio // Curatorial Moodboard & Chromatic Codex
                 </span>
               </div>
               <h2 className="font-syne font-extrabold text-2xl text-white">

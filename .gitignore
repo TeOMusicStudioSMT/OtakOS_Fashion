@@ -14,10 +14,10 @@ dist/
 # `public/kadry/` to KOPIA obrazów z `katalog/`, robiona przez
 # scripts/zwiaz-obrazy.mjs. Trzymanie dwóch kopii w repozytorium to 23 MB
 # duplikatu i dwa źródła prawdy o tym, która wersja jest aktualna.
-otakos-fashion-__-0.00g-app/public/kadry/
+public/kadry/
 
 # Kreacje wykute przez Jajo — wynik pracy, nie kod. Rosną z każdym kuciem.
-otakos-fashion-__-0.00g-app/OtakOs_Fashion/kreacje.json
+OtakOs_Fashion/kreacje.json
 
 # ── Pliki tymczasowe ─────────────────────────────────────────────────────────
 *.tmp
@@ -27,7 +27,8 @@ otakos-fashion-__-0.00g-app/OtakOs_Fashion/kreacje.json
 # ── Dane instancji — wynik pracy, nie kod ───────────────────────────
 # Marki, wgrane logo, narysowane kreacje i ofirmowane pliki należą do TEJ
 # Katedry. W repozytorium byłyby cudzym portfolio i rosnącą górą PNG.
-otakos-fashion-__-0.00g-app/OtakOs_Fashion/marki.json
-otakos-fashion-__-0.00g-app/OtakOs_Fashion/wizualizacje.json
-otakos-fashion-__-0.00g-app/OtakOs_Fashion/logo/
-otakos-fashion-__-0.00g-app/public/ofirmowane/
+OtakOs_Fashion/marki.json
+OtakOs_Fashion/wizualizacje.json
+OtakOs_Fashion/obroty.json
+OtakOs_Fashion/logo/
+public/ofirmowane/

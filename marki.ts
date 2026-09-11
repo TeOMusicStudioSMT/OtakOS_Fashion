@@ -42,8 +42,8 @@ const uruchom = promisify(execFile);
 function znajdzFfmpeg(): string | null {
     const kandydaci = [
         process.env.OTAKOS_FFMPEG,
-        path.resolve(process.cwd(), '..', '..', 'TeO_Genesis', 'node_modules', 'ffmpeg-static', 'ffmpeg.exe'),
-        path.resolve(process.cwd(), '..', '..', 'TeO_Genesis', 'node_modules', 'ffmpeg-static', 'ffmpeg'),
+        path.resolve(process.cwd(), '..', 'TeO_Genesis', 'node_modules', 'ffmpeg-static', 'ffmpeg.exe'),
+        path.resolve(process.cwd(), '..', 'TeO_Genesis', 'node_modules', 'ffmpeg-static', 'ffmpeg'),
     ].filter(Boolean) as string[];
 
     for (const k of kandydaci) {

@@ -1,8 +1,9 @@
-# 👗 OtakOS Fashion — katalog główny
+# 👗 TeO Fashion Studio
 
-Katalog materiału dla **działu mody** Katedry OtakOS. Na razie to nie aplikacja,
-tylko **magazyn z indeksem** — dach nad materiałem, który już istnieje, żeby nie
-leżał luzem w projekcie filmowym, do którego nie pasuje.
+Dział mody Katedry — aplikacja działa na silniku **OtakOS** (OtakOS to nazwa silnika,
+Katedry i Uniwersum; studia noszą nazwy TeO). Od 2026-09-11 aplikacja leży
+w korzeniu repozytorium (wcześniej w podkatalogu `otakos-fashion-__-0.00g-app/`);
+katalog `OtakOs_Fashion/` obok to jej dane, a `katalog/` to materiał źródłowy.
 
 ## Co tu leży
 
