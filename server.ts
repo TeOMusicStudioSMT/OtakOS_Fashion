@@ -20,9 +20,22 @@ import { lista as wczytajMarki, zapisz as zapiszMarke, usun as usunMarke, wgrajL
  * nie może być wyjątkiem — tym bardziej że wysyłałby do Google opisy
  * niewydanych kolekcji.
  *
- * Chmura zostaje jako świadomy wybór: OTAKOS_FASHION_CHMURA=1 plus klucz.
+ * Chmura zostaje jako świadomy wybór: OTAKOS_FASHION_CHMURA=1 plus klucz — albo przełącznik w locie
+ * (Suweren 2026-10-07: „lokalnie, a z chmury będzie korzystał, jak się przełączy na chmurę"): Hub w trybie
+ * CLOUD otwiera studio z `?tryb=chmura`, panel woła POST /api/krawiec/tryb. Klucz: GEMINI_API_KEY z .env
+ * albo klucz Gemini udostępniony mostowi w Kiblu (_OtakOs_Wymiar/kibel_gemini.txt Katedry obok).
  */
-const CHMURA_WLACZONA = process.env.OTAKOS_FASHION_CHMURA === '1';
+let CHMURA_WLACZONA = process.env.OTAKOS_FASHION_CHMURA === '1';
+
+/** Klucz Gemini: .env studia, potem Kibel Katedry (czytany za każdym razem — nowy klucz działa bez restartu). */
+function kluczGemini(): string | null {
+  if (process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY;
+  const plik = process.env.OTAKOS_KIBEL_GEMINI || path.resolve(process.cwd(), '..', 'TeO_Genesis', '_OtakOs_Wymiar', 'kibel_gemini.txt');
+  try {
+    const m = fs.readFileSync(plik, 'utf8').match(/(AIza[\w-]{30,}|AQ\.[\w-]{30,})/);
+    return m ? m[1] : null;
+  } catch { return null; }
+}
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -37,13 +50,14 @@ app.use(express.json({ limit: '10mb' }));
 
 // Lazy Gemini client initialization
 let genAIClient: GoogleGenAI | null = null;
+let kluczKlienta: string | null = null;
 function getGenAI(): GoogleGenAI | null {
-  if (!process.env.GEMINI_API_KEY) {
-    return null;
-  }
-  if (!genAIClient) {
+  const klucz = kluczGemini();
+  if (!klucz) return null;
+  if (!genAIClient || kluczKlienta !== klucz) {
+    kluczKlienta = klucz;
     genAIClient = new GoogleGenAI({
-      apiKey: process.env.GEMINI_API_KEY,
+      apiKey: klucz,
       httpOptions: {
         headers: {
           'User-Agent': 'aistudio-build',
@@ -60,7 +74,7 @@ app.get('/api/health', (req, res) => {
     status: 'ok',
     environment: '0.00G OtakOS Cathedral',
     collection: 'SOLLET',
-    hasApiKey: Boolean(process.env.GEMINI_API_KEY),
+    hasApiKey: Boolean(kluczGemini()),
   });
 });
 
@@ -292,11 +306,19 @@ app.post('/api/wykuj', async (req, res) => {
   }
 });
 
+/** Przełącznik chmury w locie (Hub w trybie CLOUD → ?tryb=chmura). Bez klucza — uczciwie: lokalnie dalej. */
+app.post('/api/krawiec/tryb', (req, res) => {
+  const chce = req.body?.chmura === true;
+  const maKlucz = Boolean(kluczGemini());
+  CHMURA_WLACZONA = chce && maKlucz;
+  res.json({ wlaczona: CHMURA_WLACZONA, maKlucz, ...(chce && !maKlucz ? { powod: 'Brak klucza Gemini — wklej go w Hubie: TeO Kibel → „🔗 Udostępnij mostowi”. Projektuje dalej lokalnie.' } : {}) });
+});
+
 app.get('/api/krawiec/stan', async (_req, res) => {
   const lokalny = await stanKrawca();
   res.json({
     lokalny,
-    chmura: { wlaczona: CHMURA_WLACZONA, maKlucz: Boolean(process.env.GEMINI_API_KEY) },
+    chmura: { wlaczona: CHMURA_WLACZONA, maKlucz: Boolean(kluczGemini()) },
     // ⚠️ Szablon NIE jest silnikiem AI i tak jest opisany.
     szablon: { zawszeDostepny: true, uwaga: 'Składanka z gotowych zwrotów, nie projekt AI.' },
   });
@@ -325,26 +347,32 @@ app.post('/api/generate-garment', async (req, res) => {
   }
 
   // ── 1. KRAWIEC LOKALNY — droga domyślna ─────────────────────────────
-  try {
-    const k = await zaprojektujLokalnie({ scenePrompt, archetype, anomalyType, customNotes });
-    return res.json({
-      id: `SOLLET-SYNTH-${Date.now().toString().slice(-4)}`,
-      keyframe: 0,
-      phase: 'Synthesized Couture Extension',
-      scenePrompt,
-      ...k,
-      tags: [archetype, anomalyType, 'AI-Synthesized', '0.00G', 'SOLLET'],
-    });
-  } catch (err: any) {
-    // ⚠️ Powód ZAPISUJEMY i oddajemy dalej. Cicha ucieczka do szablonu sprawia,
-    // że Suweren nie wie, czy dostał projekt, czy składankę z gotowych zwrotów.
-    console.warn('[Krawiec lokalny] nie dał rady:', err?.message);
-    (res.locals as Record<string, unknown>).powodLokalny = String(err?.message ?? err);
-  }
+  // Przy przełączonej chmurze (Hub w trybie CLOUD, 2026-10-07) kolejność się odwraca: chmura pierwsza,
+  // lokalny krawiec jako zapas, gdy chmura padnie. Bez chmury — jak dawniej: lokalnie, potem szablon.
+  const sprobujLokalnie = async (): Promise<boolean> => {
+    try {
+      const k = await zaprojektujLokalnie({ scenePrompt, archetype, anomalyType, customNotes });
+      res.json({
+        id: `SOLLET-SYNTH-${Date.now().toString().slice(-4)}`,
+        keyframe: 0,
+        phase: 'Synthesized Couture Extension',
+        scenePrompt,
+        ...k,
+        tags: [archetype, anomalyType, 'AI-Synthesized', '0.00G', 'SOLLET'],
+      });
+      return true;
+    } catch (err: any) {
+      // ⚠️ Powód ZAPISUJEMY i oddajemy dalej. Cicha ucieczka do szablonu sprawia,
+      // że Suweren nie wie, czy dostał projekt, czy składankę z gotowych zwrotów.
+      console.warn('[Krawiec lokalny] nie dał rady:', err?.message);
+      (res.locals as Record<string, unknown>).powodLokalny = String(err?.message ?? err);
+      return false;
+    }
+  };
+  const ai = CHMURA_WLACZONA ? getGenAI() : null;
+  if (!ai && await sprobujLokalnie()) return;
 
   // ── 2. CHMURA — tylko na wyraźny wybór ─────────────────────────
-  const ai = CHMURA_WLACZONA ? getGenAI() : null;
-
   if (ai) {
     try {
       const systemInstruction = `You are the Chief Digital Stylist and Visionary Architect for "OtakOS Fashion" — a high-concept, cyber-alchemical haute couture line born inside the 0.00G OtakOS Cathedral.
@@ -430,8 +458,9 @@ Translate this into an OtakOS Fashion couture masterpiece. Return structured JSO
       });
     } catch (err: any) {
       console.error('Gemini synthesis error:', err);
-      // Fall through to algorithmic synthesis engine
     }
+    // Chmura padła (np. brak kredytów na koncie) — zanim szablon, lokalny krawiec.
+    if (await sprobujLokalnie()) return;
   }
 
   // ── 3. SZABLON — OSTATNIA DESKA, I TAK OZNACZONA ───────────────────
