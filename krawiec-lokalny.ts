@@ -27,7 +27,17 @@ const OLLAMA = process.env.OTAKOS_OLLAMA || 'http://127.0.0.1:11434';
  * polami mechaniki — mały model gubi pola albo psuje składnię. `qwen3.5:9b`
  * sprawdził się w tej Katedrze przy zadaniach wymagających wierności szczegółom.
  */
-const MODEL = process.env.OTAKOS_MODEL_MODY || 'qwen3.5:9b';
+const MODEL_WSKAZANY = process.env.OTAKOS_MODEL_MODY || null;
+/**
+ * 2026-11-01 (Suweren: „krawiec nie pracuje, bo nie ma już tego modelu w Ollamie”): zamiast jednego modelu na sztywno —
+ * kolejka preferencji, bierzemy pierwszy, który Ollama MA. Średnie modele (9–12B) trzymają długi JSON; bez e2b/1b.
+ */
+export const PREFEROWANE = ['qwen3.5:9b', 'gemma4:12B', 'gemma4:12b', 'ornith-1.5:9b', 'gemma4:latest', 'gemma4:e4b', 'qwen2.5-coder:7b'];
+export function wybierzModel(modele: string[]): string | null {
+    if (MODEL_WSKAZANY) return modele.includes(MODEL_WSKAZANY) ? MODEL_WSKAZANY : null;
+    return PREFEROWANE.find((m) => modele.includes(m)) ?? null;
+}
+let MODEL = MODEL_WSKAZANY || PREFEROWANE[0];
 
 export interface MechanikaUbioru {
     materials: string;
@@ -155,13 +165,16 @@ export async function stanKrawca(): Promise<{ zywy: boolean; model: string; mode
         if (!r.ok) return { zywy: false, model: MODEL, modele: [], powod: `Ollama HTTP ${r.status}` };
         const d = await r.json() as { models?: { name: string }[] };
         const modele = (d.models ?? []).map((m) => m.name);
-        if (!modele.includes(MODEL)) {
+        const wybrany = wybierzModel(modele);
+        if (!wybrany) {
             return {
                 zywy: false, model: MODEL, modele,
-                powod: `Ollama nie ma modelu „${MODEL}". Ma: ${modele.slice(0, 6).join(', ')}. `
-                     + 'Pobierz go (`ollama pull ' + MODEL + '`) albo wskaż inny przez OTAKOS_MODEL_MODY.',
+                powod: MODEL_WSKAZANY
+                    ? `Ollama nie ma modelu „${MODEL_WSKAZANY}" (OTAKOS_MODEL_MODY). Ma: ${modele.slice(0, 6).join(', ')}.`
+                    : `Ollama nie ma żadnego z modeli krawca (${PREFEROWANE.join(', ')}). Ma: ${modele.slice(0, 6).join(', ')}. Wskaż inny przez OTAKOS_MODEL_MODY.`,
             };
         }
+        MODEL = wybrany;
         return { zywy: true, model: MODEL, modele };
     } catch (e) {
         return {
