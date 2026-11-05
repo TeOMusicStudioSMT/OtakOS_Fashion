@@ -9,9 +9,11 @@ import { wczytajMotyw, wytnijTlo, paleta, imieZOpisu, przodPlakat, przodHerb, pl
 
 /** Ubiory z długim rękawem — ta sama lista co DLUGIE_REKAWY w nadruki.ts (serwer). */
 const DLUGIE_REKAWY = ['bluza', 'longsleeve', 'kurtka', 'bomber', 'jeansowa', 'ramoneska', 'parka', 'plaszcz'];
+/** Kurtki szyje się naszywkami (chenille), resztę nadrukiem. */
+const KURTKI = ['kurtka', 'bomber', 'jeansowa', 'ramoneska'];
 
 interface Motyw { id: string; opis: string; galaz: string | null }
-interface Kolekcja { id: string; obraz: string; ubior: string; kolor: string; uklad: string; tekst: TekstKolekcji; strefy: Record<string, string>; makietaPrzod?: string; makietaTyl?: string; arkusz?: string; stan: string; kiedy: string }
+interface Kolekcja { id: string; obraz: string; ubior: string; kolor: string; uklad: string; tekst: TekstKolekcji; styl?: string; strefy: Record<string, string>; makietaPrzod?: string; makietaTyl?: string; arkusz?: string; stan: string; kiedy: string }
 
 async function api<T>(adres: string, init?: RequestInit): Promise<T> {
   const r = await fetch(adres, { ...init, headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) } });
@@ -26,7 +28,7 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
   const [kolor, setKolor] = useState('czarny');
   const [uklad, setUklad] = useState<'plakat' | 'herb'>('plakat');
   const [styl, setStyl] = useState<'plaski' | 'haft'>('plaski');
-  useEffect(() => { if (['kurtka', 'bomber', 'jeansowa', 'ramoneska'].includes(ubior)) setStyl('haft'); }, [ubior]);
+  useEffect(() => { if (KURTKI.includes(ubior)) setStyl('haft'); }, [ubior]);
   const [tekst, setTekst] = useState<TekstKolekcji>({});
   // 🌍 język napisów na ubraniu (zapamiętany); opowieść pisze się od razu w nim, przycisk tłumaczy wszystkie pola
   const [jezyk, setJezyk] = useState(() => { try { return localStorage.getItem('fashion_jezyk_napisow') || 'pl'; } catch { return 'pl'; } });
@@ -35,6 +37,14 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
   const [kolekcje, setKolekcje] = useState<Kolekcja[]>([]);
   const [praca, setPraca] = useState('');
   const [blad, setBlad] = useState('');
+  const [historia, setHistoria] = useState<{ odcinek: string; tytul: string; kwestie: string[] }[]>([]);
+  const [ceny, setCeny] = useState<Record<string, string>>(() => { try { return JSON.parse(localStorage.getItem('fashion_ceny_sklepu') || '{}'); } catch { return {}; } });
+  useEffect(() => { try { localStorage.setItem('fashion_ceny_sklepu', JSON.stringify(ceny)); } catch { /* — */ } }, [ceny]);
+  const [waluta, setWaluta] = useState('PLN');
+  const [bazaObrazow, setBazaObrazow] = useState('');
+  const [pakiet, setPakiet] = useState<{ katalog: string; csv: string; produktow: number } | null>(null);
+  const [linkSklepu, setLinkSklepu] = useState('');
+  const [info, setInfo] = useState('');
   const podglady = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => { void api<{ kolekcje: Kolekcja[] }>('/api/nadruki/kolekcje').then((d) => setKolekcje(d.kolekcje)).catch(() => {}); }, []);
@@ -42,10 +52,12 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
     setWyciety(null);
     if (!motyw) return;
     setTekst((t) => ({ blok: 'TETHERIA', sentencja: 'From 0 & 1 to Infinity — Rodzina Jest Na Zawsze', ...t, tytul: imieZOpisu(motyw.opis) }));
+    void api<{ historia: { odcinek: string; tytul: string; kwestie: string[] }[] }>(`/api/nadruki/historia?imie=${encodeURIComponent(imieZOpisu(motyw.opis))}`).then((d) => setHistoria(d.historia)).catch(() => setHistoria([]));
     void wczytajMotyw(motyw.id).then((img) => setWyciety(wytnijTlo(img))).catch((e) => setBlad(`Motyw się nie wczytał: ${e.message}`));
   }, [motyw?.id]);
 
-  const strefy = () => {
+  const strefy = (o: { ubior?: string; styl?: string; uklad?: string; tekst?: TekstKolekcji } = {}) => strefyDla(o.ubior ?? ubior, o.styl ?? styl, o.uklad ?? uklad, o.tekst ?? tekst);
+  const strefyDla = (ubior: string, styl: string, uklad: string, tekst: TekstKolekcji) => {
     if (!wyciety || !motyw) return null;
     const pal = paleta(kolor);
     if (styl === 'haft') {
@@ -97,22 +109,60 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
     catch (e) { setBlad((e as Error).message); } finally { setPraca(''); }
   };
 
-  const uszyj = async () => {
-    const s = strefy();
-    if (!s || !motyw) return;
-    setBlad('');
-    try {
-      setPraca('Makiety przodu i tyłu (pierwszy raz FLUX — do kilku minut)…');
-      const { kolekcja } = await api<{ kolekcja: Kolekcja }>('/api/nadruki/kolekcje', { method: 'POST', body: JSON.stringify({ obraz: motyw.id, ubior, kolor, uklad, styl, tekst }) });
+  /** Jedna kolekcja: strefy → serwer → makiety PRZÓD/TYŁ + arkusz. `przed` = napis postępu (np. „3/10 Parka · ”). */
+  const uszyjZ = async (o: { ubior: string; styl: string; uklad: string; tekst: TekstKolekcji }, przed = '') => {
+    const s = strefy(o);
+    if (!s || !motyw) throw new Error('Motyw jeszcze się nie wczytał.');
+      setPraca(`${przed}Makiety przodu i tyłu (pierwszy raz FLUX — do kilku minut)…`);
+      const { kolekcja } = await api<{ kolekcja: Kolekcja }>('/api/nadruki/kolekcje', { method: 'POST', body: JSON.stringify({ obraz: motyw.id, ubior: o.ubior, kolor, uklad: o.uklad, styl: o.styl, tekst: o.tekst }) });
       for (const [nazwa, c] of Object.entries(s)) {
-        setPraca(`Wgrywam strefę ${nazwa} (4096 px)…`);
+        setPraca(`${przed}Wgrywam strefę ${nazwa} (4096 px)…`);
         const r = await fetch(`/api/nadruki/kolekcje/${kolekcja.id}/strefa/${nazwa}`, { method: 'POST', headers: { 'Content-Type': 'image/png' }, body: await doPng(c) });
         if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error ?? `HTTP ${r.status}`);
       }
-      setPraca('Składam makiety i arkusz produkcyjny…');
+      setPraca(`${przed}Składam makiety i arkusz produkcyjny…`);
       const { kolekcja: gotowa } = await api<{ kolekcja: Kolekcja }>(`/api/nadruki/kolekcje/${kolekcja.id}/zloz`, { method: 'POST' });
       setKolekcje((l) => [gotowa, ...l]);
+      return gotowa;
+  };
+  const uszyj = async () => {
+    setBlad('');
+    try { await uszyjZ({ ubior, styl, uklad, tekst }); } catch (e) { setBlad((e as Error).message); } finally { setPraca(''); }
+  };
+  /** 🧺 Po jednym z KAŻDEGO modelu: dla każdego Kronikarz pisze INNĄ opowieść z historii postaci w serialu (wzór = model ubioru, `inne` = tytuły już napisanych). */
+  const uszyjWszystkie = async () => {
+    if (!motyw) return;
+    setBlad(''); setInfo('');
+    const modele = Object.keys(ubiory), inne: string[] = [], zle: string[] = [];
+    for (const [i, u] of modele.entries()) {
+      const przed = `${i + 1}/${modele.length} ${ubiory[u].nazwa} · `;
+      try {
+        setPraca(`${przed}Kronikarz pisze opowieść…`);
+        const d = await api<{ tekst: TekstKolekcji }>('/api/nadruki/opowiesc', { method: 'POST', body: JSON.stringify({ obraz: motyw.id, jezyk, wzor: ubiory[u].nazwa, inne }) });
+        const t = { ...d.tekst, blok: tekst.blok, sentencja: tekst.sentencja };
+        if (t.tytul) inne.push(`${t.tytul}${t.podtytul ? ` — ${t.podtytul}` : ''}`);
+        await uszyjZ({ ubior: u, styl: KURTKI.includes(u) ? 'haft' : 'plaski', uklad: i % 2 ? 'herb' : 'plakat', tekst: t }, przed);
+      } catch (e) { zle.push(`${ubiory[u].nazwa}: ${(e as Error).message}`); }
+    }
+    setPraca('');
+    setInfo(`Uszyte ${modele.length - zle.length}/${modele.length} modeli.`);
+    if (zle.length) setBlad(zle.join(' · '));
+  };
+  const imie = motyw ? imieZOpisu(motyw.opis) : '';
+  const imieSklepu = imie.charAt(0) + imie.slice(1).toLowerCase();
+  const moje = kolekcje.filter((k) => k.stan === 'gotowa' && k.obraz === motyw?.id);
+  const ostatniaNaModel = Object.values(Object.fromEntries([...moje].reverse().map((k) => [k.ubior, k]))) as Kolekcja[];
+  const zrobPakiet = async () => {
+    setBlad(''); setPakiet(null); setPraca('Składam pakiet Shopify…');
+    try {
+      const c = Object.fromEntries(Object.entries(ceny).map(([k, v]) => [k, Number(String(v).replace(',', '.'))]));
+      setPakiet(await api('/api/nadruki/pakiet-sklepu', { method: 'POST', body: JSON.stringify({ imie: imieSklepu, kolekcje: ostatniaNaModel.map((k) => k.id), ceny: c, waluta, bazaObrazow }) }));
     } catch (e) { setBlad((e as Error).message); } finally { setPraca(''); }
+  };
+  const zapiszLink = async () => {
+    setBlad(''); setInfo('');
+    try { await api('/api/nadruki/link-sklepu', { method: 'PUT', body: JSON.stringify({ imie: imieSklepu, url: linkSklepu.trim() || null }) }); setInfo(linkSklepu.trim() ? 'Link zapisany w Katedrze — Kronikarz doklei go do opisu filmów z tą postacią.' : 'Link zdjęty.'); }
+    catch (e) { setBlad((e as Error).message); }
   };
 
   const usun = async (id: string) => { await api(`/api/nadruki/kolekcje/${id}`, { method: 'DELETE' }).catch(() => {}); setKolekcje((l) => l.filter((k) => k.id !== id)); };
@@ -144,6 +194,8 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
             {praca === 'opowiesc' ? <><Loader2 className="mr-1 inline h-3 w-3 animate-spin" />Kronikarz pisze…</> : <><Sparkles className="mr-1 inline h-3 w-3" />Dopisz opowieść (Kronikarz)</>}
           </button>
         </div>
+        {historia.length > 0 && <details className="rounded border p-2 text-xs" style={{ borderColor: themeConfig.borderHex }}><summary className="cursor-pointer">📺 {imieSklepu} w serialu TeOgochi Mini — {historia.length} odc. (Kronikarz pisze z tego)</summary>
+          {historia.map((h) => <div key={h.odcinek} className="mt-2"><b>{h.tytul}</b><ul className="ml-4 list-disc opacity-80">{h.kwestie.map((k, i) => <li key={i}>{k}</li>)}</ul></div>)}</details>}
         <div className="grid gap-2 md:grid-cols-3">{pole('tytul', 'Tytuł (imię)')}{pole('podtytul', 'Podtytuł')}{pole('zywiol', 'Żywioł')}</div>
         {styl === 'haft' && <div className="grid gap-2 md:grid-cols-2">{pole('blok', 'Napis blokowy (pierś, plecy)')}{pole('sentencja', 'Sentencja kursywą (dół pleców)')}</div>}
         <div className="grid gap-2 md:grid-cols-2">{pole('opowiesc', 'Opowieść (plecy)', true)}<div className="space-y-2">{pole('cytat', 'Cytat')}{pole('edycja', 'Edycja')}</div></div>
@@ -158,7 +210,20 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
         <button onClick={() => void uszyj()} disabled={!!praca || !wyciety} className="rounded-lg border px-4 py-2 text-sm disabled:opacity-40" style={{ borderColor: themeConfig.hex, color: themeConfig.hex }}>
           {praca && praca !== 'opowiesc' ? <><Loader2 className="mr-1 inline h-4 w-4 animate-spin" />{praca}</> : '🧵 Uszyj kolekcję (pliki druku + makiety PRZÓD i TYŁ)'}
         </button>
+        <button onClick={() => void uszyjWszystkie()} disabled={!!praca || !wyciety} title="Po jednym z każdego modelu, każdy z inną opowieścią z serialu; kurtki naszywkami" className="ml-3 rounded-lg border px-4 py-2 text-sm disabled:opacity-40" style={{ borderColor: themeConfig.hex }}>
+          🧺 Uszyj wszystkie modele ({Object.keys(ubiory).length})
+        </button>
+        {ostatniaNaModel.length > 0 && <div className="space-y-2 rounded border p-3 text-xs" style={{ borderColor: themeConfig.borderHex }}>
+          <b>🛍️ Pakiet do Shopify — {imieSklepu} ({ostatniaNaModel.length} produktów: najnowsza kolekcja każdego modelu; produkty wchodzą jako SZKICE)</b>
+          <div className="flex flex-wrap gap-2">{ostatniaNaModel.map((k) => <label key={k.ubior}>{ubiory[k.ubior]?.nazwa ?? k.ubior}<br /><input value={ceny[k.ubior] ?? ''} onChange={(e) => setCeny({ ...ceny, [k.ubior]: e.target.value })} placeholder="cena" className="w-20 rounded bg-black/40 px-2 py-1" /></label>)}
+            <label>Waluta<br /><input value={waluta} onChange={(e) => setWaluta(e.target.value.toUpperCase().slice(0, 3))} className="w-14 rounded bg-black/40 px-2 py-1" /></label></div>
+          <label className="block">Publiczny adres zdjęć (https, opcjonalnie — bez niego zdjęcia dodasz w panelu Shopify)<br /><input value={bazaObrazow} onChange={(e) => setBazaObrazow(e.target.value)} placeholder="https://…/nadruki/sklep/borowik" className="w-full rounded bg-black/40 px-2 py-1" /></label>
+          <button onClick={() => void zrobPakiet()} disabled={!!praca} className="rounded border px-3 py-1 disabled:opacity-40" style={{ borderColor: themeConfig.hex }}>📦 Złóż pakiet (CSV + makiety + pliki druku)</button>
+          {pakiet && <p>✓ {pakiet.produktow} produktów · <a href={pakiet.csv} download className="underline">produkty.csv</a> · katalog <code>public{pakiet.katalog}</code> (CZYTAJ.txt w środku)</p>}
+          <label className="block">Link kolekcji w sklepie (po imporcie w Shopify) — trafi do opisów filmów YouTube z {imieSklepu}<br /><span className="flex gap-2"><input value={linkSklepu} onChange={(e) => setLinkSklepu(e.target.value)} placeholder="https://twoj-sklep.myshopify.com/collections/borowik" className="flex-1 rounded bg-black/40 px-2 py-1" /><button onClick={() => void zapiszLink()} className="rounded border px-3 py-1" style={{ borderColor: themeConfig.hex }}>🔗 Zapisz w Katedrze</button></span></label>
+        </div>}
       </>}
+      {info && <p className="text-sm text-green-400">✓ {info}</p>}
       {blad && <p className="text-sm text-red-400">⚠ {blad}</p>}
       <div className="space-y-4">
         {kolekcje.filter((k) => k.stan === 'gotowa').map((k) => (

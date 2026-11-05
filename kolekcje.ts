@@ -227,17 +227,98 @@ export async function przetlumacz(tekst: any, jezyk: string): Promise<Kolekcja['
 }
 
 /** ✨ Opowieść na plecy: lokalny model krawca pisze z opisu motywu (JSON, jedna poprawka). */
-export async function opowiesc(obraz: string, jezyk = 'pl'): Promise<Kolekcja['tekst']> {
+/**
+ * 📺 Historia postaci z serialu TeOgochi Mini — PRAWDZIWE kwestie ze scenariuszy odcinków Katedry
+ * (`_OtakOs_Wymiar/produkcje/teogochi-mini/odcNN-*\/scenariusz.mjs`, `OTAKOS_SERIAL_DIR`): co postać mówi + zdania narratora z jej imieniem.
+ */
+const SERIAL = process.env.OTAKOS_SERIAL_DIR || path.resolve(process.cwd(), '..', 'TeO_Genesis', '_OtakOs_Wymiar', 'produkcje', 'teogochi-mini');
+export async function historiaPostaci(imie: string): Promise<{ odcinek: string; tytul: string; kwestie: string[] }[]> {
+    const im = String(imie ?? '').trim();
+    if (im.length < 2) return [];
+    const out = [];
+    for (const d of (await fs.readdir(SERIAL).catch(() => [] as string[])).filter((x) => /^odc\d+/.test(x)).sort()) {
+        const tekst = await fs.readFile(path.join(SERIAL, d, 'scenariusz.mjs'), 'utf8').catch(() => '');
+        const tytul = /PODTYTUL\s*=\s*'([^']+)'/.exec(tekst)?.[1] ?? d;
+        const kwestie: string[] = [];
+        for (const m of tekst.matchAll(/\[\s*'([^']+)'\s*,\s*'((?:[^'\\]|\\.)+)'\s*\]/g)) {
+            const ml = m[1].toLowerCase(), il = im.toLowerCase();   // imię z motywu bywa WIELKIMI literami
+            if (ml === il) kwestie.push(`${m[1]}: „${m[2]}”`);
+            else if (ml === 'narrator' && m[2].toLowerCase().includes(il)) kwestie.push(`Narrator: ${m[2]}`);
+        }
+        if (kwestie.length) out.push({ odcinek: d, tytul, kwestie: kwestie.slice(0, 6) });
+    }
+    return out;
+}
+
+export async function opowiesc(obraz: string, jezyk = 'pl', { wzor = '', inne = [] as string[], historia = true } = {}): Promise<Kolekcja['tekst']> {
     const motyw = (await motywy()).find((m) => m.id === obraz);
     if (!motyw) throw new Error('Nie ma takiego motywu w Pracowni.');
-    const system = `Jesteś Kronikarzem Teterhii — piszesz LORE na plecy streetwearowej bluzy z Katedry OtakOS. Język WSZYSTKICH pól: ${nazwaJezyka(jezyk)}.
-Zwięźle, baśniowo albo mrocznie, z obrazem w słowach; bez cudzych chronionych postaci i bez nazw marek.
+    const imie = (/[„"]([^"”]{2,30})[”"]/.exec(motyw.opis)?.[1] ?? '').trim();
+    const serial = historia && imie ? await historiaPostaci(imie) : [];
+    const system = `Jesteś Kronikarzem Teterhii — piszesz LORE na streetwearowe ubranie z Katedry OtakOS. Język WSZYSTKICH pól: ${nazwaJezyka(jezyk)}.
+Zwięźle, baśniowo albo mrocznie, z obrazem w słowach; bez cudzych chronionych postaci i bez nazw marek.${serial.length ? `
+Postać ma swoją HISTORIĘ Z SERIALU (fakty niżej) — opowieść ma do niej nawiązywać, nie wymyślaj innej biografii.` : ''}${inne.length ? `
+Ta postać ma już opowieści na innych modelach: ${inne.join(' | ')} — napisz INNĄ, o innym wątku z historii.` : ''}
 Odpowiedz WYŁĄCZNIE JSON-em: {"tytul":"≤ 3 słowa, IMIĘ albo przydomek","podtytul":"≤ 6 słów","zywiol":"jedno słowo","opowiesc":"2–3 zdania, łącznie ≤ 320 znaków","cytat":"krótka maksyma ≤ 12 słów"}`;
-    const tekst = await krawiecJson(system, `MOTYW (opis z Pracowni): ${motyw.opis}`, 0.9, (w) => !!(w.tytul && w.opowiesc));
+    const prompt = [`MOTYW (opis z Pracowni): ${motyw.opis}`, wzor && `MODEL UBRANIA: ${wzor}`,
+        serial.length && `HISTORIA Z SERIALU TeOgochi Mini:\n${serial.map((o) => `[${o.tytul}] ${o.kwestie.join(' ')}`).join('\n')}`].filter(Boolean).join('\n\n');
+    const tekst = await krawiecJson(system, prompt, 0.9, (w) => !!(w.tytul && w.opowiesc));
     return { ...tekst, edycja: `ARCHIVE // 0.00G · Nº ${parseInt(crypto.createHash('sha1').update(obraz).digest('hex').slice(0, 4), 16) % 900 + 100}` };   // stały numer motywu
 }
 
 /** Ustaw tekst kolekcji (po poprawkach Suwerena) — strefy trzeba wtedy przerysować w przeglądarce. */
 export async function ustawTekst(id: string, tekst: any) { const k = await czytaj(id); k.tekst = oczyscTekst(tekst); k.stan = 'szkic'; await zapisz(k); return k; }
+
+/**
+ * 🛍️ Pakiet do Shopify — kolekcje jednej postaci → `public/nadruki/sklep/<imie>/`:
+ * `produkty.csv` (format importu produktów Shopify, każdy produkt jako SZKIC `draft`, rozmiary S–XXL dla odzieży),
+ * katalog na model (makiety przód/tył, arkusz, pliki druku stref), `CZYTAJ.txt`.
+ * UCZCIWIE: cenę podaje Suweren (bez ceny = odmowa); obrazy w CSV tylko, gdy podasz publiczny adres, pod którym je wystawisz
+ * (`bazaObrazow`) — Shopify ściąga zdjęcia z URL; inaczej kolumna pusta i zdjęcia dodajesz w panelu Shopify.
+ */
+const ROZMIARY = ['S', 'M', 'L', 'XL', 'XXL'];
+const csv = (v: unknown) => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+const slug = (s: string) => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'kolekcja';
+export async function pakietSklepu({ imie, kolekcje: ids, ceny = {}, waluta = 'PLN', bazaObrazow = '', vendor = 'TeO Story · Katedra OtakOS' }: { imie: string; kolekcje: string[]; ceny: Record<string, number>; waluta?: string; bazaObrazow?: string; vendor?: string }) {
+    const nazwa = String(imie ?? '').trim().slice(0, 40);
+    if (!nazwa) throw new Error('Podaj imię postaci kolekcji.');
+    const lista: Kolekcja[] = [];
+    for (const id of (Array.isArray(ids) ? ids : []).slice(0, 30)) { const k = await czytaj(String(id)); if (k.stan === 'gotowa') lista.push(k); }
+    if (!lista.length) throw new Error('Nie ma gotowych kolekcji do pakietu (najpierw „Uszyj”).');
+    const brak = [...new Set(lista.map((k) => k.ubior))].filter((u) => !(Number(ceny[u]) > 0));
+    if (brak.length) throw new Error(`Podaj cenę dla: ${brak.map((u) => UBIORY[u]?.nazwa ?? u).join(', ')}.`);
+    const baza = String(bazaObrazow || '').replace(/\/+$/, '');
+    if (baza && !/^https:\/\//.test(baza)) throw new Error('Adres obrazów musi być https.');
+    const kat = path.join(PUBLIC, 'nadruki', 'sklep', slug(nazwa));
+    await fs.rm(kat, { recursive: true, force: true }); await fs.mkdir(kat, { recursive: true });
+    const wiersze = [['Handle', 'Title', 'Body (HTML)', 'Vendor', 'Type', 'Tags', 'Published', 'Option1 Name', 'Option1 Value', 'Variant SKU', 'Variant Price', 'Variant Requires Shipping', 'Variant Taxable', 'Image Src', 'Image Position', 'Image Alt Text', 'Status']];
+    for (const k of lista) {
+        const u = UBIORY[k.ubior]?.nazwa?.replace(/^🧥\s*/, '') ?? k.ubior;
+        const handle = `${slug(nazwa)}-${k.ubior}-${k.kolor}`;
+        const dk = path.join(kat, handle);
+        await fs.mkdir(dk, { recursive: true });
+        const pliki = ['podglad-przod.png', 'podglad-tyl.png', 'arkusz.png', ...Object.keys(k.strefy).map((s) => `strefa-${s}.png`)];
+        for (const p of pliki) await fs.copyFile(path.join(dir(k.id), p), path.join(dk, p)).catch(() => {});
+        const t = k.tekst;
+        const opis = `<p><strong>${t.tytul || nazwa}</strong>${t.podtytul ? ` — ${t.podtytul}` : ''}</p>${t.opowiesc ? `<p>${t.opowiesc}</p>` : ''}${t.cytat ? `<p><em>„${t.cytat}”</em></p>` : ''}<p>${u} · ${k.kolor} · ${k.styl === 'haft' ? 'naszywki haftowane' : 'nadruk'}. Postać ${nazwa} z serialu TeOgochi Mini (uniwersum Teterhii).</p>`;
+        const tytul = `${nazwa} — ${t.tytul && t.tytul !== nazwa ? `${t.tytul} · ` : ''}${u}`;
+        const tagi = ['TeOgochi', 'Teterhia', nazwa, u, k.styl === 'haft' ? 'naszywki' : 'nadruk'].join(', ');
+        const obrazy = baza ? [`${baza}/${handle}/podglad-przod.png`, `${baza}/${handle}/podglad-tyl.png`] : [];
+        const warianty = k.ubior === 'torba' ? ['Default Title'] : ROZMIARY;
+        warianty.forEach((r, i) => wiersze.push([handle, i ? '' : tytul, i ? '' : opis, i ? '' : vendor, i ? '' : u, i ? '' : tagi, i ? '' : 'FALSE',
+            k.ubior === 'torba' ? 'Title' : 'Rozmiar', r, `${handle}-${r}`.toUpperCase().slice(0, 60), String(Number(ceny[k.ubior]).toFixed(2)), 'TRUE', 'TRUE',
+            obrazy[i] ?? '', obrazy[i] ? String(i + 1) : '', obrazy[i] ? `${nazwa} — ${u} (${i ? 'tył' : 'przód'})` : '', i ? '' : 'draft']));
+    }
+    await fs.writeFile(path.join(kat, 'produkty.csv'), '﻿' + wiersze.map((w) => w.map(csv).join(',')).join('\n'), 'utf8');
+    await fs.writeFile(path.join(kat, 'CZYTAJ.txt'), [
+        `Pakiet kolekcji „${nazwa}” — ${lista.length} produktów, ceny w ${waluta}.`,
+        'Shopify → Produkty → Importuj → produkty.csv. Każdy produkt wchodzi jako SZKIC (draft) — sprawdzasz i publikujesz sam.',
+        baza ? `Zdjęcia w CSV wskazują na ${baza}/… — muszą tam być publicznie, zanim zaimportujesz.` : 'Zdjęć w CSV nie ma (brak publicznego adresu) — dodaj podglad-przod.png i podglad-tyl.png z katalogu produktu w panelu Shopify.',
+        'Pliki strefa-*.png (4096 px, przezroczyste) idą do drukarni POD (Printful, Gelato…) przy konfiguracji produktu; arkusz.png = podgląd wszystkich stref.',
+        'Makiety to rysunek FLUX, nie zdjęcie produktu drukarni — na stronie sklepu lepiej podmienić je na makiety z kreatora drukarni.',
+        `Walutę sklepu ustawiasz w Shopify (CSV podaje same liczby — tu ${waluta}).`,
+    ].join('\n'), 'utf8');
+    return { katalog: `/nadruki/sklep/${slug(nazwa)}`, csv: `/nadruki/sklep/${slug(nazwa)}/produkty.csv`, produktow: lista.length, wierszy: wiersze.length - 1 };
+}
 
 export async function usun(id: string) { await czytaj(id); await fs.rm(dir(id), { recursive: true, force: true }); return { usunieta: id }; }

@@ -225,7 +225,21 @@ app.get('/api/nadruki/motyw/:id', async (req, res) => {
   } catch { res.status(502).end(); }
 });
 app.post('/api/nadruki/opowiesc', async (req, res) => {
-  try { res.json({ tekst: await Kolekcje.opowiesc(String(req.body?.obraz ?? ''), String(req.body?.jezyk ?? 'pl')) }); }
+  try { res.json({ tekst: await Kolekcje.opowiesc(String(req.body?.obraz ?? ''), String(req.body?.jezyk ?? 'pl'), { wzor: String(req.body?.wzor ?? ''), inne: Array.isArray(req.body?.inne) ? req.body.inne.map(String).slice(0, 12) : [] }) }); }
+  catch (err: any) { res.status(422).json({ error: String(err?.message ?? err) }); }
+});
+app.get('/api/nadruki/historia', async (req, res) => { res.json({ historia: await Kolekcje.historiaPostaci(String(req.query.imie ?? '')) }); });
+// 🛍️ link kolekcji w sklepie → most Katedry (Kronikarz dokleja go do opisu filmów z tą postacią); serwer woła most bez przeglądarki = maszyna
+app.put('/api/nadruki/link-sklepu', async (req, res) => {
+  try {
+    const r = await fetch(`${process.env.OTAKOS_MOST || 'http://127.0.0.1:3001'}/api/sklep-linki`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imie: req.body?.imie, url: req.body?.url ?? null }), signal: AbortSignal.timeout(10000) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || d.success === false) return res.status(r.status === 200 ? 422 : r.status).json({ error: d.message ?? `most: HTTP ${r.status}` });
+    res.json(d);
+  } catch (err: any) { res.status(502).json({ error: `Most Katedry nie odpowiada: ${err?.message ?? err}` }); }
+});
+app.post('/api/nadruki/pakiet-sklepu', async (req, res) => {
+  try { res.json(await Kolekcje.pakietSklepu(req.body ?? {})); }
   catch (err: any) { res.status(422).json({ error: String(err?.message ?? err) }); }
 });
 app.post('/api/nadruki/przetlumacz', async (req, res) => {
