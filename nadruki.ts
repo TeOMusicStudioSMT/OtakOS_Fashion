@@ -69,15 +69,17 @@ export async function motywy(): Promise<{ id: string; opis: string; galaz: strin
 }
 
 /** Pusta makieta ubioru: z pamięci wizualizacji albo narysowana raz (FLUX, ziarno stałe). */
-export async function makieta(ubior: string, kolor: string, { odNowa = false, strona = 'przod' as 'przod' | 'tyl' } = {}) {
+export async function makieta(ubior: string, kolor: string, { odNowa = false, strona = 'przod' as 'przod' | 'tyl', ziarno = 4242 } = {}) {
     if (!UBIORY[ubior]) throw new Error(`Ubiór: ${Object.keys(UBIORY).join(', ')}.`);
     if (!KOLORY[kolor]) throw new Error(`Kolor: ${Object.keys(KOLORY).join(', ')}.`);
-    const id = `makieta-${ubior}-${kolor}${strona === 'tyl' ? '-tyl' : ''}`;
+    // torba z tyłu = ta sama torba; prośba o „tył ubrania” dawała FLUX-owi skrzydła-rękawy (2026-11-06)
+    if (ubior === 'torba' && strona === 'tyl') return makieta(ubior, kolor, { odNowa, ziarno });
+    const id =`makieta-${ubior}-${kolor}${strona === 'tyl' ? '-tyl' : ''}`;
     const jest = (await wczytajWizualizacje()).find((w) => w.id === id);
     if (jest && !odNowa) return jest;
     const zlec = () => narysuj({
-        id, szerokosc: 768, wysokosc: 1024, ziarno: 4242,
-        prompt: `flat lay product photo of a plain ${KOLORY[kolor]} ${UBIORY[ubior].prompt}, ${strona === 'tyl' ? 'BACK view (seen from behind, back of the garment, no front details' + (ubior === 'bluza' ? ', hood lying flat at the top' : '') + ')' : 'front view'}, perfectly centered, symmetrical, sleeves spread out, completely blank with no print, no logo, no text, no graphics, soft even studio lighting, plain light grey background`,
+        id, szerokosc: 768, wysokosc: 1024, ziarno,
+        prompt: `flat lay product photo of a plain ${KOLORY[kolor]} ${UBIORY[ubior].prompt}, ${strona === 'tyl' ? 'BACK view (seen from behind, back of the garment, no front details' + (ubior === 'bluza' ? ', hood lying flat at the top' : '') + ')' : 'front view'}, perfectly centered, symmetrical, ${ubior === 'torba' ? 'a simple flat rectangular bag with two straight handles on top, nothing on the sides' : 'sleeves spread out'}, completely blank with no print, no logo, no text, no graphics, soft even studio lighting, plain light grey background`,
     });
     // ComfyUI budzony przez most odpowiada „właśnie wstaje” — czekamy do ~3 min, zamiast odbijać Suwerena.
     for (let proba = 0; ; proba++) {

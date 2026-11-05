@@ -11,6 +11,9 @@ import { wczytajMotyw, wytnijTlo, paleta, imieZOpisu, przodPlakat, przodHerb, pl
 const DLUGIE_REKAWY = ['bluza', 'longsleeve', 'kurtka', 'bomber', 'jeansowa', 'ramoneska', 'parka', 'plaszcz'];
 /** Kurtki szyje się naszywkami (chenille), resztę nadrukiem. */
 const KURTKI = ['kurtka', 'bomber', 'jeansowa', 'ramoneska'];
+/** 💰 Cennik 0.00G Style (Suweren 2026-11-06, EUR) — domyślny, do zmiany w panelu. Bomber i jeansowa: bez ceny Suwerena. */
+const CENNIK_0G: Record<string, string> = { torba: '29', koszulka: '39', longsleeve: '49', bluza: '69', parka: '89', plaszcz: '89', kurtka: '119', ramoneska: '119' };
+const SKLEP_0G = 'https://teo.center';
 
 interface Motyw { id: string; opis: string; galaz: string | null }
 interface Kolekcja { id: string; obraz: string; ubior: string; kolor: string; uklad: string; tekst: TekstKolekcji; styl?: string; strefy: Record<string, string>; makietaPrzod?: string; makietaTyl?: string; arkusz?: string; stan: string; kiedy: string }
@@ -38,12 +41,12 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
   const [praca, setPraca] = useState('');
   const [blad, setBlad] = useState('');
   const [historia, setHistoria] = useState<{ odcinek: string; tytul: string; kwestie: string[] }[]>([]);
-  const [ceny, setCeny] = useState<Record<string, string>>(() => { try { return JSON.parse(localStorage.getItem('fashion_ceny_sklepu') || '{}'); } catch { return {}; } });
+  const [ceny, setCeny] = useState<Record<string, string>>(() => { let z: Record<string, string> = {}; try { z = JSON.parse(localStorage.getItem('fashion_ceny_sklepu') || '{}'); } catch { /* — */ } return { ...CENNIK_0G, ...Object.fromEntries(Object.entries(z).filter(([, v]) => String(v).trim())) }; });
   useEffect(() => { try { localStorage.setItem('fashion_ceny_sklepu', JSON.stringify(ceny)); } catch { /* — */ } }, [ceny]);
-  const [waluta, setWaluta] = useState('PLN');
+  const [waluta, setWaluta] = useState('EUR');
   const [bazaObrazow, setBazaObrazow] = useState('');
   const [pakiet, setPakiet] = useState<{ katalog: string; csv: string; produktow: number } | null>(null);
-  const [linkSklepu, setLinkSklepu] = useState('');
+  const [linkSklepu, setLinkSklepu] = useState(SKLEP_0G);
   const [info, setInfo] = useState('');
   const podglady = useRef<Record<string, HTMLDivElement | null>>({});
 

@@ -206,7 +206,7 @@ app.get('/api/nadruki/motywy', async (_req, res) => {
 });
 /** Pusta makieta ubioru (FLUX raz, potem z pamięci) — czeka na rysunek do 20 min. */
 app.post('/api/nadruki/makieta', async (req, res) => {
-  try { res.json({ makieta: await makietaUbioru(req.body?.ubior, req.body?.kolor, { odNowa: req.body?.odNowa === true }) }); }
+  try { res.json({ makieta: await makietaUbioru(req.body?.ubior, req.body?.kolor, { odNowa: req.body?.odNowa === true, strona: req.body?.strona === 'tyl' ? 'tyl' : 'przod', ziarno: Number.isInteger(req.body?.ziarno) ? req.body.ziarno : 4242 }) }); }
   catch (err: any) { res.status(422).json({ error: String(err?.message ?? err) }); }
 });
 app.post('/api/nadruki', async (req, res) => {

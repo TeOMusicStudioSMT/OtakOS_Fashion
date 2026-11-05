@@ -279,7 +279,7 @@ export async function ustawTekst(id: string, tekst: any) { const k = await czyta
 const ROZMIARY = ['S', 'M', 'L', 'XL', 'XXL'];
 const csv = (v: unknown) => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
 const slug = (s: string) => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'kolekcja';
-export async function pakietSklepu({ imie, kolekcje: ids, ceny = {}, waluta = 'PLN', bazaObrazow = '', vendor = '0.00G Style' }: { imie: string; kolekcje: string[]; ceny: Record<string, number>; waluta?: string; bazaObrazow?: string; vendor?: string }) {
+export async function pakietSklepu({ imie, kolekcje: ids, ceny = {}, waluta = 'EUR', bazaObrazow = '', vendor = '0.00G Style' }: { imie: string; kolekcje: string[]; ceny: Record<string, number>; waluta?: string; bazaObrazow?: string; vendor?: string }) {
     const nazwa = String(imie ?? '').trim().slice(0, 40);
     if (!nazwa) throw new Error('Podaj imię postaci kolekcji.');
     const lista: Kolekcja[] = [];
