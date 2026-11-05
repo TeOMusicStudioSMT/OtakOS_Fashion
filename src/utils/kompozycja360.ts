@@ -130,6 +130,11 @@ export function przodHerb(m: HTMLCanvasElement, t: TekstKolekcji, pal: Paleta, z
   return c;
 }
 
+/** Etykieta żywiołu na karcie lore — w języku napisów (ustawia Kolekcja360). */
+const ETYKIETA_ZYWIOLU: Record<string, string> = { pl: 'ŻYWIOŁ', en: 'ELEMENT', de: 'ELEMENT', es: 'ELEMENTO', fr: 'ÉLÉMENT', it: 'ELEMENTO', ja: '属性', uk: 'СТИХІЯ' };
+let jezykNapisow = 'pl';
+export function ustawJezykNapisow(j: string) { jezykNapisow = ETYKIETA_ZYWIOLU[j] ? j : 'pl'; }
+
 /** PLECY — Opowieść: pieczęć przy karku, wielka postać w aureoli, karta lore (tytuł, żywioł, opowieść, cytat, edycja). */
 export function plecy(m: HTMLCanvasElement, t: TekstKolekcji, pal: Paleta, ziarno: string, W = 4096, H = 5120): HTMLCanvasElement {
   const c = plotno(W, H), g = c.getContext('2d')!, los = losowe(`${ziarno}-plecy`);
@@ -138,7 +143,7 @@ export function plecy(m: HTMLCanvasElement, t: TekstKolekcji, pal: Paleta, ziarn
   aureola(g, W / 2, H * 0.34, W * 0.36, pal, los);
   postac(g, m, W / 2, H * 0.34, W * 0.6, H * 0.5);
   tekstSrodek(g, (t.tytul || '').toUpperCase(), W / 2, H * 0.655, `900 ${W * 0.1}px Cinzel, Georgia, serif`, pal.tusz, W * 0.012, W * 0.9);
-  const pod = [t.podtytul, t.zywiol && `ŻYWIOŁ: ${t.zywiol.toUpperCase()}`].filter(Boolean).join('   ·   ');
+  const pod = [t.podtytul, t.zywiol && `${ETYKIETA_ZYWIOLU[jezykNapisow]}: ${t.zywiol.toUpperCase()}`].filter(Boolean).join('   ·   ');
   tekstSrodek(g, pod, W / 2, H * 0.71, `600 ${W * 0.03}px Cinzel, Georgia, serif`, pal.zloto, W * 0.004, W * 0.86);
   // karta opowieści (ramka 0.735–0.895), cytat i edycja pod nią — każde w swoim pasie
   g.strokeStyle = pal.zloto; g.globalAlpha = 0.7; g.lineWidth = W * 0.0018;

@@ -5,7 +5,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Loader2, Sparkles, Download, Trash2 } from 'lucide-react';
-import { wczytajMotyw, wytnijTlo, paleta, imieZOpisu, przodPlakat, przodHerb, plecy, rekaw, doPng, naszywkaBlok, haftKursywa, plecyHaft, naszywkaPostaci, naszywkaGlowy, naszywkaSymbol, type TekstKolekcji } from '../utils/kompozycja360';
+import { wczytajMotyw, wytnijTlo, paleta, imieZOpisu, przodPlakat, przodHerb, plecy, rekaw, doPng, naszywkaBlok, haftKursywa, plecyHaft, naszywkaPostaci, naszywkaGlowy, naszywkaSymbol, ustawJezykNapisow, type TekstKolekcji } from '../utils/kompozycja360';
 
 /** Ubiory z długim rękawem — ta sama lista co DLUGIE_REKAWY w nadruki.ts (serwer). */
 const DLUGIE_REKAWY = ['bluza', 'longsleeve', 'kurtka', 'bomber', 'jeansowa', 'ramoneska', 'parka', 'plaszcz'];
@@ -35,6 +35,7 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
   const [tekst, setTekst] = useState<TekstKolekcji>({});
   // 🌍 język napisów na ubraniu (zapamiętany); opowieść pisze się od razu w nim, przycisk tłumaczy wszystkie pola
   const [jezyk, setJezyk] = useState(() => { try { return localStorage.getItem('fashion_jezyk_napisow') || 'pl'; } catch { return 'pl'; } });
+  ustawJezykNapisow(jezyk);
   useEffect(() => { try { localStorage.setItem('fashion_jezyk_napisow', jezyk); } catch { /* — */ } }, [jezyk]);
   const [wyciety, setWyciety] = useState<HTMLCanvasElement | null>(null);
   const [kolekcje, setKolekcje] = useState<Kolekcja[]>([]);
@@ -160,7 +161,14 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
     setBlad(''); setInfo('');
     const zle: string[] = [];
     for (const [i, k] of ostatniaNaModel.entries()) {
-      try { await uszyjZ({ ubior: k.ubior, styl: k.styl ?? (KURTKI.includes(k.ubior) ? 'haft' : 'plaski'), uklad: k.uklad, tekst: { ...k.tekst, blok: tekst.blok, sentencja: tekst.sentencja } }, `↻ ${i + 1}/${ostatniaNaModel.length} ${ubiory[k.ubior]?.nazwa ?? k.ubior} · `); }
+      const przed = `↻ ${i + 1}/${ostatniaNaModel.length} ${ubiory[k.ubior]?.nazwa ?? k.ubior} · `;
+      try {
+        let t: TekstKolekcji = { ...k.tekst, blok: tekst.blok, sentencja: tekst.sentencja };
+        // 🌍 napisy w języku z formularza (globalne wydanie = en); model krawca przekłada wszystkie pola
+        setPraca(`${przed}tłumaczę napisy (${jezyk})…`);
+        t = (await api<{ tekst: TekstKolekcji }>('/api/nadruki/przetlumacz', { method: 'POST', body: JSON.stringify({ tekst: t, jezyk }) })).tekst;
+        await uszyjZ({ ubior: k.ubior, styl: k.styl ?? (KURTKI.includes(k.ubior) ? 'haft' : 'plaski'), uklad: k.uklad, tekst: t }, przed);
+      }
       catch (e) { zle.push(`${k.ubior}: ${(e as Error).message}`); }
     }
     setPraca(''); setInfo(`Przeszyte ${ostatniaNaModel.length - zle.length}/${ostatniaNaModel.length}.`);
@@ -170,7 +178,7 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
     setBlad(''); setPakiet(null); setPraca('Składam pakiet Shopify…');
     try {
       const c = Object.fromEntries(Object.entries(ceny).map(([k, v]) => [k, Number(String(v).replace(',', '.'))]));
-      setPakiet(await api('/api/nadruki/pakiet-sklepu', { method: 'POST', body: JSON.stringify({ imie: imieSklepu, kolekcje: ostatniaNaModel.map((k) => k.id), ceny: c, waluta, bazaObrazow }) }));
+      setPakiet(await api('/api/nadruki/pakiet-sklepu', { method: 'POST', body: JSON.stringify({ imie: imieSklepu, kolekcje: ostatniaNaModel.map((k) => k.id), ceny: c, waluta, bazaObrazow, jezyk }) }));
     } catch (e) { setBlad((e as Error).message); } finally { setPraca(''); }
   };
   const zapiszLink = async () => {
@@ -228,7 +236,7 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
           🧺 Uszyj wszystkie modele ({Object.keys(ubiory).length})
         </button>
         {ostatniaNaModel.length > 0 && <button onClick={() => void przeszyjWszystkie()} disabled={!!praca || !wyciety} title="Te same opowieści, nowy napis blokowy i sentencja z formularza" className="ml-3 rounded-lg border px-4 py-2 text-sm disabled:opacity-40" style={{ borderColor: themeConfig.borderHex }}>
-          ↻ Przeszyj {ostatniaNaModel.length} z nowym napisem
+          ↻ Przeszyj {ostatniaNaModel.length} — napisy w języku: {jezyk}
         </button>}
         {ostatniaNaModel.length > 0 && <div className="space-y-2 rounded border p-3 text-xs" style={{ borderColor: themeConfig.borderHex }}>
           <b>🛍️ Pakiet do Shopify — {imieSklepu} ({ostatniaNaModel.length} produktów: najnowsza kolekcja każdego modelu; produkty wchodzą jako SZKICE)</b>

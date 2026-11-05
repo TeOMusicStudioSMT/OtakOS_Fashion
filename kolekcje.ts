@@ -277,9 +277,12 @@ export async function ustawTekst(id: string, tekst: any) { const k = await czyta
  * (`bazaObrazow`) — Shopify ściąga zdjęcia z URL; inaczej kolumna pusta i zdjęcia dodajesz w panelu Shopify.
  */
 const ROZMIARY = ['S', 'M', 'L', 'XL', 'XXL'];
+/** Nazwy produktów w sklepie — wydanie globalne po angielsku (Suweren 2026-11-06). */
+const UBIORY_EN: Record<string, string> = { koszulka: 'T-Shirt', bluza: 'Hoodie', longsleeve: 'Longsleeve', torba: 'Tote Bag', bomber: 'Bomber Jacket', jeansowa: 'Denim Jacket', ramoneska: 'Leather Biker Jacket', parka: 'Hooded Parka', plaszcz: 'Trench Coat', kurtka: 'Varsity Jacket' };
 const csv = (v: unknown) => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
 const slug = (s: string) => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'kolekcja';
-export async function pakietSklepu({ imie, kolekcje: ids, ceny = {}, waluta = 'EUR', bazaObrazow = '', vendor = '0.00G Style' }: { imie: string; kolekcje: string[]; ceny: Record<string, number>; waluta?: string; bazaObrazow?: string; vendor?: string }) {
+export async function pakietSklepu({ imie, kolekcje: ids, ceny = {}, waluta = 'EUR', bazaObrazow = '', vendor = '0.00G Style', jezyk = 'en' }: { imie: string; kolekcje: string[]; ceny: Record<string, number>; waluta?: string; bazaObrazow?: string; vendor?: string; jezyk?: string }) {
+    const en = jezyk !== 'pl';
     const nazwa = String(imie ?? '').trim().slice(0, 40);
     if (!nazwa) throw new Error('Podaj imię postaci kolekcji.');
     const lista: Kolekcja[] = [];
@@ -293,21 +296,22 @@ export async function pakietSklepu({ imie, kolekcje: ids, ceny = {}, waluta = 'E
     await fs.rm(kat, { recursive: true, force: true }); await fs.mkdir(kat, { recursive: true });
     const wiersze = [['Handle', 'Title', 'Body (HTML)', 'Vendor', 'Type', 'Tags', 'Published', 'Option1 Name', 'Option1 Value', 'Variant SKU', 'Variant Price', 'Variant Requires Shipping', 'Variant Taxable', 'Image Src', 'Image Position', 'Image Alt Text', 'Status']];
     for (const k of lista) {
-        const u = UBIORY[k.ubior]?.nazwa?.replace(/^🧥\s*/, '') ?? k.ubior;
-        const handle = `${slug(nazwa)}-${k.ubior}-${k.kolor}`;
+        const u = en ? (UBIORY_EN[k.ubior] ?? k.ubior) : (UBIORY[k.ubior]?.nazwa?.replace(/^🧥\s*/, '') ?? k.ubior);
+        const KOLOR_EN: Record<string, string> = { czarny: 'black', bialy: 'white', grafitowy: 'graphite', granatowy: 'navy', zielony: 'green', piaskowy: 'sand', burgundowy: 'burgundy' };
+        const handle = en ? `${slug(nazwa)}-${slug(UBIORY_EN[k.ubior] ?? k.ubior)}-${KOLOR_EN[k.kolor] ?? slug(k.kolor)}` : `${slug(nazwa)}-${k.ubior}-${k.kolor}`;
         const dk = path.join(kat, handle);
         await fs.mkdir(dk, { recursive: true });
         const pliki = ['podglad-przod.png', 'podglad-tyl.png', 'arkusz.png', ...Object.keys(k.strefy).map((s) => `strefa-${s}.png`)];
         for (const p of pliki) await fs.copyFile(path.join(dir(k.id), p), path.join(dk, p)).catch(() => {});
         const t = k.tekst;
-        const opis = `<p><strong>${t.tytul || nazwa}</strong>${t.podtytul ? ` — ${t.podtytul}` : ''}</p>${t.opowiesc ? `<p>${t.opowiesc}</p>` : ''}${t.cytat ? `<p><em>„${t.cytat}”</em></p>` : ''}<p>${u} · ${k.kolor} · ${k.styl === 'haft' ? 'naszywki haftowane' : 'nadruk'}. 0.00G Style · postać ${nazwa} z serialu TeOgochi Mini.</p>`;
+        const opis = `<p><strong>${t.tytul || nazwa}</strong>${t.podtytul ? ` — ${t.podtytul}` : ''}</p>${t.opowiesc ? `<p>${t.opowiesc}</p>` : ''}${t.cytat ? `<p><em>${en ? '“' : '„'}${t.cytat}”</em></p>` : ''}<p>${en ? `${u} · ${k.styl === 'haft' ? 'chenille embroidered patches' : 'printed'}. 0.00G Style · ${nazwa} from the TeOgochi Mini series.` : `${u} · ${k.kolor} · ${k.styl === 'haft' ? 'naszywki haftowane' : 'nadruk'}. 0.00G Style · postać ${nazwa} z serialu TeOgochi Mini.`}</p>`;
         const tytul = `${nazwa} — ${t.tytul && t.tytul !== nazwa ? `${t.tytul} · ` : ''}${u}`;
-        const tagi = ['0.00G Style', 'TeOgochi', nazwa, u, k.styl === 'haft' ? 'naszywki' : 'nadruk'].join(', ');
+        const tagi = ['0.00G Style', 'TeOgochi', nazwa, u, k.styl === 'haft' ? (en ? 'patches' : 'naszywki') : (en ? 'print' : 'nadruk')].join(', ');
         const obrazy = baza ? [`${baza}/${handle}/podglad-przod.png`, `${baza}/${handle}/podglad-tyl.png`] : [];
         const warianty = k.ubior === 'torba' ? ['Default Title'] : ROZMIARY;
         warianty.forEach((r, i) => wiersze.push([handle, i ? '' : tytul, i ? '' : opis, i ? '' : vendor, i ? '' : u, i ? '' : tagi, i ? '' : 'FALSE',
-            k.ubior === 'torba' ? 'Title' : 'Rozmiar', r, `${handle}-${r}`.toUpperCase().slice(0, 60), String(Number(ceny[k.ubior]).toFixed(2)), 'TRUE', 'TRUE',
-            obrazy[i] ?? '', obrazy[i] ? String(i + 1) : '', obrazy[i] ? `${nazwa} — ${u} (${i ? 'tył' : 'przód'})` : '', i ? '' : 'draft']));
+            k.ubior === 'torba' ? 'Title' : (en ? 'Size' : 'Rozmiar'), r, `${handle}-${r}`.toUpperCase().slice(0, 60), String(Number(ceny[k.ubior]).toFixed(2)), 'TRUE', 'TRUE',
+            obrazy[i] ?? '', obrazy[i] ? String(i + 1) : '', obrazy[i] ? `${nazwa} — ${u} (${i ? (en ? 'back' : 'tył') : (en ? 'front' : 'przód')})` : '', i ? '' : 'draft']));
     }
     await fs.writeFile(path.join(kat, 'produkty.csv'), '﻿' + wiersze.map((w) => w.map(csv).join(',')).join('\n'), 'utf8');
     await fs.writeFile(path.join(kat, 'CZYTAJ.txt'), [
