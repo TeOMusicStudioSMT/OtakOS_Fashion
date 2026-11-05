@@ -7,6 +7,7 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { zaprojektuj as zaprojektujLokalnie, stanKrawca } from './krawiec-lokalny';
 import { kadry as kadryProdukcji, projekty as projektyKatedry, wykuj, kreacje as wczytajKreacje } from './jajo-mody';
 import { narysuj, lista as wczytajWizualizacje } from './wizualizacje';
+import { lista as wczytajNadruki, motywy as motywyNadrukow, makieta as makietaUbioru, nadrukuj, usun as usunNadruk, UBIORY, KOLORY } from './nadruki';
 import { przeglad } from './dozorca';
 import { obroc, lista as wczytajObroty, wariantyWzoru, DLUGOSCI as DLUGOSCI_OBROTU } from './obrot';
 import { lista as wczytajMarki, zapisz as zapiszMarke, usun as usunMarke, wgrajLogo, nalozLogo, wycen, ROGI } from './marki';
@@ -192,6 +193,28 @@ app.post('/api/marki/naloz', async (req, res) => {
     console.warn('[Marki] logo się nie nałożyło:', err?.message);
     res.status(422).json({ error: String(err?.message ?? err) });
   }
+});
+
+// ── 👕 NADRUKI — motywy Teterhii i Mini z Pracowni Katedry na ubraniach (nadruki.ts) ──
+app.get('/api/nadruki', async (_req, res) => {
+  res.json({ nadruki: await wczytajNadruki(), ubiory: UBIORY, kolory: KOLORY });
+});
+app.get('/api/nadruki/motywy', async (_req, res) => {
+  try { res.json({ motywy: await motywyNadrukow() }); }
+  catch (err: any) { res.status(502).json({ error: String(err?.message ?? err) }); }
+});
+/** Pusta makieta ubioru (FLUX raz, potem z pamięci) — czeka na rysunek do 20 min. */
+app.post('/api/nadruki/makieta', async (req, res) => {
+  try { res.json({ makieta: await makietaUbioru(req.body?.ubior, req.body?.kolor, { odNowa: req.body?.odNowa === true }) }); }
+  catch (err: any) { res.status(422).json({ error: String(err?.message ?? err) }); }
+});
+app.post('/api/nadruki', async (req, res) => {
+  try { res.json({ nadruk: await nadrukuj(req.body ?? {}) }); }
+  catch (err: any) { res.status(422).json({ error: String(err?.message ?? err) }); }
+});
+app.delete('/api/nadruki/:id', async (req, res) => {
+  try { res.json({ usuniety: await usunNadruk(req.params.id) }); }
+  catch (err: any) { res.status(404).json({ error: String(err?.message ?? err) }); }
 });
 
 // ── 🖌️ KREACJA — narysowana sztuka odzieży ───────────────────────

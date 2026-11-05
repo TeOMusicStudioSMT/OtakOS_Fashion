@@ -11,6 +11,7 @@ import { JsonCatalogViewer } from './components/JsonCatalogViewer';
 import { Galeria } from './components/Galeria';
 import { Kreacja } from './components/Kreacja';
 import { Marki } from './components/Marki';
+import { Nadruki } from './components/Nadruki';
 import { Dozorca } from './components/Dozorca';
 import { GarmentInspectorModal } from './components/GarmentInspectorModal';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
@@ -163,6 +164,7 @@ function AppContent() {
 
         {/* Trzecia tafla — kto to firmuje i ile jest warte. */}
         {viewMode === 'marki' && <Marki />}
+        {viewMode === 'nadruki' && <Nadruki />}
 
         {/* Czwarta tafla — kto pilnuje, czy to żyje. */}
         {viewMode === 'ai' && <Dozorca />}

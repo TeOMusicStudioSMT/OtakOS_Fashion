@@ -53,7 +53,7 @@ function znajdzFfmpeg(): string | null {
     return 'ffmpeg';
 }
 
-const FFMPEG = znajdzFfmpeg();
+export const FFMPEG = znajdzFfmpeg();
 
 const KORZEN = path.join(process.cwd(), 'OtakOs_Fashion');
 const PLIK = path.join(KORZEN, 'marki.json');

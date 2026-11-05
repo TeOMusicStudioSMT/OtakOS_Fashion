@@ -19,7 +19,7 @@ import React, { useState } from 'react';
 import { ViewMode } from '../types';
 import {
     Sparkles, Download, Layers, Grid3X3, Palette, Code2,
-    Scissors, BadgeCheck, Brain, ChevronDown,
+    Scissors, BadgeCheck, Brain, ChevronDown, Shirt,
 } from 'lucide-react';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { useTheme } from '../context/ThemeContext';
@@ -39,6 +39,7 @@ const GLOWNE: { id: ViewMode; nazwa: string; Ikona: React.ElementType }[] = [
     { id: 'galeria', nazwa: 'Galeria', Ikona: Layers },
     { id: 'kreacja', nazwa: 'Krawiec', Ikona: Scissors },
     { id: 'marki', nazwa: 'Brand', Ikona: BadgeCheck },
+    { id: 'nadruki', nazwa: 'Nadruki', Ikona: Shirt },
     { id: 'ai', nazwa: 'F-Ai', Ikona: Brain },
 ];
 
