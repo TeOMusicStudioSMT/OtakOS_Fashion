@@ -35,11 +35,27 @@ type Pozycja = { x: number; y: number; w: number; rot?: number };
 const DLUGI_REKAW = { 'rekaw-p': { x: 0.115, y: 0.6, w: 0.055, rot: 10 }, 'rekaw-l': { x: 0.885, y: 0.6, w: 0.055, rot: -10 } };
 const KROTKI_REKAW = { 'rekaw-p': { x: 0.14, y: 0.29, w: 0.07, rot: 28 }, 'rekaw-l': { x: 0.86, y: 0.29, w: 0.07, rot: -28 } };
 /** Naszywki haftu (styl „haft”): pierś lewa (blok) i prawa (kursywa), plecy + dół pleców, kaskada 3 naszywek na rękawach. */
+/**
+ * Krój płaszczy — pomiary z makiet FLUX (trencz piaskowy 2026-11-05): klapy zajmują środek do y ≈ 0,4, pasek y ≈ 0,45,
+ * rękaw skośnie od barku (0,30; 0,20) do mankietu (0,17; 0,56). Naszywki piersi schodzą pod klapy, rękawne idą osią rękawa,
+ * plecy: główna nad paskiem, sentencja na połach. Rękaw „p” = prawy NOSZĄCEGO (lewa strona kadru z przodu).
+ */
+const KROJE: Record<string, { rekaw: [number, number][]; rot: number; wRekaw: number; piersL: Pozycja; piersP: Pozycja; tyl: Pozycja; tylDol: Pozycja }> = {
+    plaszcz: { rekaw: [[0.268, 0.29], [0.235, 0.38], [0.203, 0.47]], rot: 13, wRekaw: 0.07,
+        piersL: { x: 0.69, y: 0.515, w: 0.13 }, piersP: { x: 0.355, y: 0.535, w: 0.15 }, tyl: { x: 0.5, y: 0.3, w: 0.4 }, tylDol: { x: 0.5, y: 0.68, w: 0.44 } },
+    parka: { rekaw: [[0.25, 0.32], [0.215, 0.45], [0.185, 0.58]], rot: 11, wRekaw: 0.08,
+        piersL: { x: 0.65, y: 0.4, w: 0.14 }, piersP: { x: 0.35, y: 0.41, w: 0.17 }, tyl: { x: 0.5, y: 0.42, w: 0.46 }, tylDol: { x: 0.5, y: 0.72, w: 0.46 } },
+};
+
 function pozycjeHaftu(ubior: string): { przod: Record<string, Pozycja>; tyl: Record<string, Pozycja> } {
     const dlugi = DLUGIE_REKAWY.includes(ubior);
+    const kroj = KROJE[ubior];
     const rekawP: Record<string, Pozycja> = {}, rekawL: Record<string, Pozycja> = {};
     if (ubior === 'koszulka') { rekawP['rekaw-p-1'] = { x: 0.14, y: 0.29, w: 0.07, rot: 28 }; rekawL['rekaw-l-1'] = { x: 0.86, y: 0.29, w: 0.07, rot: -28 }; }
-    if (dlugi) for (const [i, f] of [0.32, 0.48, 0.64].entries()) {
+    if (kroj) for (const [i, [x, y]] of kroj.rekaw.entries()) {
+        rekawP[`rekaw-p-${i + 1}`] = { x, y, w: kroj.wRekaw, rot: kroj.rot };
+        rekawL[`rekaw-l-${i + 1}`] = { x: 1 - x, y, w: kroj.wRekaw, rot: -kroj.rot };
+    } else if (dlugi) for (const [i, f] of [0.32, 0.48, 0.64].entries()) {
         rekawP[`rekaw-p-${i + 1}`] = { x: 0.19 - i * 0.035, y: f, w: 0.095, rot: 8 };
         rekawL[`rekaw-l-${i + 1}`] = { x: 0.81 + i * 0.035, y: f, w: 0.095, rot: -8 };
     }
@@ -47,6 +63,10 @@ function pozycjeHaftu(ubior: string): { przod: Record<string, Pozycja>; tyl: Rec
     for (const [k, p] of Object.entries(rekawP)) zTylu[k.replace('-p-', '-L-')] = { ...p, x: 1 - p.x, rot: -(p.rot ?? 0) };
     for (const [k, p] of Object.entries(rekawL)) zTylu[k.replace('-l-', '-P-')] = { ...p, x: 1 - p.x, rot: -(p.rot ?? 0) };
     const tylR = Object.fromEntries(Object.entries(zTylu).map(([k, p]) => [k.replace('-L-', '-p-').replace('-P-', '-l-'), p]));
+    if (kroj) return {
+        przod: { 'przod-l': kroj.piersL, 'przod-p': kroj.piersP, ...rekawP, ...rekawL },
+        tyl: { tyl: kroj.tyl, 'tyl-dol': kroj.tylDol, ...tylR },
+    };
     return {
         przod: { 'przod-l': { x: 0.64, y: 0.34, w: 0.17 }, 'przod-p': { x: 0.36, y: 0.35, w: 0.22 }, ...rekawP, ...rekawL },
         tyl: { tyl: { x: 0.5, y: ubior === 'bluza' ? 0.5 : 0.44, w: 0.54 }, 'tyl-dol': { x: 0.5, y: 0.7, w: 0.5 }, ...tylR },
