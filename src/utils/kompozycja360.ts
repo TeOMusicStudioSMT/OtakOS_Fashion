@@ -117,7 +117,7 @@ export function przodPlakat(m: HTMLCanvasElement, t: TekstKolekcji, pal: Paleta,
   postac(g, m, S / 2, S * 0.53, S * 0.6, S * 0.66);
   tekstSrodek(g, (t.tytul || '').toUpperCase(), S / 2, S * 0.09, `900 ${S * 0.09}px Cinzel, Georgia, serif`, pal.tusz, S * 0.012, S * 0.9);
   tekstSrodek(g, t.podtytul || '', S / 2, S * 0.925, `600 ${S * 0.034}px Cinzel, Georgia, serif`, pal.zloto, S * 0.004, S * 0.9);
-  tekstSrodek(g, 'TETHERIA  //  OTAKOS  ·  0.00G', S / 2, S * 0.975, `500 ${S * 0.018}px "JetBrains Mono", monospace`, pal.tusz, S * 0.006);
+  tekstSrodek(g, '0.00G STYLE  //  KATEDRA OTAKOS', S / 2, S * 0.975, `500 ${S * 0.018}px "JetBrains Mono", monospace`, pal.tusz, S * 0.006);
   return c;
 }
 
@@ -158,7 +158,7 @@ export function rekaw(t: TekstKolekcji, pal: Paleta, ziarno: string, strona: 'l'
   g.strokeStyle = pal.zloto; g.lineWidth = W * 0.02; g.beginPath(); g.arc(W / 2, W * 0.55, W * 0.36, 0, Math.PI * 2); g.stroke();
   tekstSrodek(g, (t.zywiol || t.tytul || '0').slice(0, 1).toUpperCase(), W / 2, W * 0.57, `900 ${W * 0.4}px Cinzel, Georgia, serif`, pal.tusz);
   g.save(); g.translate(W * 0.36, H * 0.55); g.rotate(-Math.PI / 2);
-  tekstSrodek(g, strona === 'l' ? 'TETHERIA  //  OTAKOS' : `${(t.tytul || 'TEOSTORY').toUpperCase()}  //  0.00G`, 0, 0, `800 ${W * 0.16}px Cinzel, Georgia, serif`, pal.tusz, W * 0.03);
+  tekstSrodek(g, strona === 'l' ? '0.00G STYLE  //  OTAKOS' : `${(t.tytul || 'TEOSTORY').toUpperCase()}  //  0.00G`, 0, 0, `800 ${W * 0.16}px Cinzel, Georgia, serif`, pal.tusz, W * 0.03);
   g.restore();
   g.fillStyle = pal.zloto; g.font = `${W * 0.11}px serif`; g.textAlign = 'center';
   for (let i = 0; i < 16; i++) g.fillText(RUNY[Math.floor(los() * RUNY.length)], W * 0.74, H * 0.26 + i * H * 0.042);
@@ -219,7 +219,7 @@ export function naszywkaPostaci(m: HTMLCanvasElement, S = 2400): HTMLCanvasEleme
 }
 /** Napis blokowy Varsity (Graduate) w podwójnej haftowanej ramce. `pion` = do góry nogami w bok (plecy). */
 export function naszywkaBlok(tekst: string, pal: Paleta, S = 2400, pion = false): HTMLCanvasElement {
-  const t = (tekst || 'TETHERIA').toUpperCase();
+  const t = (tekst || '0.00G').toUpperCase();
   const tmp = plotno(10, 10).getContext('2d')!; tmp.font = `${S * 0.2}px Graduate, Cinzel, serif`;
   const szer = Math.min(S * 2.2, tmp.measureText(t).width + S * 0.16), wys = S * 0.34;
   const c = plotno(Math.round(szer), Math.round(wys)), g = c.getContext('2d')!;
@@ -272,7 +272,7 @@ export function naszywkaGlowy(m: HTMLCanvasElement, S = 1600): HTMLCanvasElement
 /** Plecy haftowane: pionowy blok z lewej, wielka naszywka postaci z prawej. */
 export function plecyHaft(m: HTMLCanvasElement, t: TekstKolekcji, pal: Paleta, W = 4096, H = 4096): HTMLCanvasElement {
   const c = plotno(W, H), g = c.getContext('2d')!;
-  const blok = naszywkaBlok(t.blok || t.tytul || 'TETHERIA', pal, 2400, true);
+  const blok = naszywkaBlok(t.blok || t.tytul || '0.00G', pal, 2400, true);
   const sb = Math.min((W * 0.3) / blok.width, (H * 0.92) / blok.height);
   g.drawImage(blok, W * 0.04, (H - blok.height * sb) / 2, blok.width * sb, blok.height * sb);
   const n = naszywkaPostaci(m, 2400), sn = Math.min((W * 0.62) / n.width, (H * 0.95) / n.height);

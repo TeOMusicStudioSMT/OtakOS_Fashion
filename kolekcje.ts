@@ -279,7 +279,7 @@ export async function ustawTekst(id: string, tekst: any) { const k = await czyta
 const ROZMIARY = ['S', 'M', 'L', 'XL', 'XXL'];
 const csv = (v: unknown) => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
 const slug = (s: string) => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'kolekcja';
-export async function pakietSklepu({ imie, kolekcje: ids, ceny = {}, waluta = 'PLN', bazaObrazow = '', vendor = 'TeO Story · Katedra OtakOS' }: { imie: string; kolekcje: string[]; ceny: Record<string, number>; waluta?: string; bazaObrazow?: string; vendor?: string }) {
+export async function pakietSklepu({ imie, kolekcje: ids, ceny = {}, waluta = 'PLN', bazaObrazow = '', vendor = '0.00G Style' }: { imie: string; kolekcje: string[]; ceny: Record<string, number>; waluta?: string; bazaObrazow?: string; vendor?: string }) {
     const nazwa = String(imie ?? '').trim().slice(0, 40);
     if (!nazwa) throw new Error('Podaj imię postaci kolekcji.');
     const lista: Kolekcja[] = [];
@@ -300,9 +300,9 @@ export async function pakietSklepu({ imie, kolekcje: ids, ceny = {}, waluta = 'P
         const pliki = ['podglad-przod.png', 'podglad-tyl.png', 'arkusz.png', ...Object.keys(k.strefy).map((s) => `strefa-${s}.png`)];
         for (const p of pliki) await fs.copyFile(path.join(dir(k.id), p), path.join(dk, p)).catch(() => {});
         const t = k.tekst;
-        const opis = `<p><strong>${t.tytul || nazwa}</strong>${t.podtytul ? ` — ${t.podtytul}` : ''}</p>${t.opowiesc ? `<p>${t.opowiesc}</p>` : ''}${t.cytat ? `<p><em>„${t.cytat}”</em></p>` : ''}<p>${u} · ${k.kolor} · ${k.styl === 'haft' ? 'naszywki haftowane' : 'nadruk'}. Postać ${nazwa} z serialu TeOgochi Mini (uniwersum Teterhii).</p>`;
+        const opis = `<p><strong>${t.tytul || nazwa}</strong>${t.podtytul ? ` — ${t.podtytul}` : ''}</p>${t.opowiesc ? `<p>${t.opowiesc}</p>` : ''}${t.cytat ? `<p><em>„${t.cytat}”</em></p>` : ''}<p>${u} · ${k.kolor} · ${k.styl === 'haft' ? 'naszywki haftowane' : 'nadruk'}. 0.00G Style · postać ${nazwa} z serialu TeOgochi Mini.</p>`;
         const tytul = `${nazwa} — ${t.tytul && t.tytul !== nazwa ? `${t.tytul} · ` : ''}${u}`;
-        const tagi = ['TeOgochi', 'Teterhia', nazwa, u, k.styl === 'haft' ? 'naszywki' : 'nadruk'].join(', ');
+        const tagi = ['0.00G Style', 'TeOgochi', nazwa, u, k.styl === 'haft' ? 'naszywki' : 'nadruk'].join(', ');
         const obrazy = baza ? [`${baza}/${handle}/podglad-przod.png`, `${baza}/${handle}/podglad-tyl.png`] : [];
         const warianty = k.ubior === 'torba' ? ['Default Title'] : ROZMIARY;
         warianty.forEach((r, i) => wiersze.push([handle, i ? '' : tytul, i ? '' : opis, i ? '' : vendor, i ? '' : u, i ? '' : tagi, i ? '' : 'FALSE',

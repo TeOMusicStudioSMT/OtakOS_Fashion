@@ -51,7 +51,7 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
   useEffect(() => {
     setWyciety(null);
     if (!motyw) return;
-    setTekst((t) => ({ blok: 'TETHERIA', sentencja: 'From 0 & 1 to Infinity — Rodzina Jest Na Zawsze', ...t, tytul: imieZOpisu(motyw.opis) }));
+    setTekst((t) => ({ blok: '0.00G', sentencja: 'From 0 & 1 to Infinity — Rodzina Jest Na Zawsze', ...t, tytul: imieZOpisu(motyw.opis) }));
     void api<{ historia: { odcinek: string; tytul: string; kwestie: string[] }[] }>(`/api/nadruki/historia?imie=${encodeURIComponent(imieZOpisu(motyw.opis))}`).then((d) => setHistoria(d.historia)).catch(() => setHistoria([]));
     void wczytajMotyw(motyw.id).then((img) => setWyciety(wytnijTlo(img))).catch((e) => setBlad(`Motyw się nie wczytał: ${e.message}`));
   }, [motyw?.id]);
@@ -63,7 +63,7 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
     if (styl === 'haft') {
       // 🧵 naszywki: pierś lewa = blok varsity, prawa = haft kursywą; plecy = blok pionowo + wielka naszywka postaci; dół pleców = sentencja
       const h: Record<string, HTMLCanvasElement> = {
-        'przod-l': naszywkaBlok(tekst.blok || 'TETHERIA', pal), 'przod-p': haftKursywa(tekst.cytat || tekst.tytul || ''),
+        'przod-l': naszywkaBlok(tekst.blok || '0.00G', pal), 'przod-p': haftKursywa(tekst.cytat || tekst.tytul || ''),
         tyl: plecyHaft(wyciety, tekst, pal), 'tyl-dol': haftKursywa(tekst.sentencja || tekst.cytat || ''),
       };
       const dlugi = DLUGIE_REKAWY.includes(ubior);
@@ -152,6 +152,17 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
   const imieSklepu = imie.charAt(0) + imie.slice(1).toLowerCase();
   const moje = kolekcje.filter((k) => k.stan === 'gotowa' && k.obraz === motyw?.id);
   const ostatniaNaModel = Object.values(Object.fromEntries([...moje].reverse().map((k) => [k.ubior, k]))) as Kolekcja[];
+  /** ↻ Najnowsza kolekcja każdego modelu jeszcze raz — te same opowieści, napis blokowy i sentencja z formularza (np. po zmianie marki). */
+  const przeszyjWszystkie = async () => {
+    setBlad(''); setInfo('');
+    const zle: string[] = [];
+    for (const [i, k] of ostatniaNaModel.entries()) {
+      try { await uszyjZ({ ubior: k.ubior, styl: k.styl ?? (KURTKI.includes(k.ubior) ? 'haft' : 'plaski'), uklad: k.uklad, tekst: { ...k.tekst, blok: tekst.blok, sentencja: tekst.sentencja } }, `↻ ${i + 1}/${ostatniaNaModel.length} ${ubiory[k.ubior]?.nazwa ?? k.ubior} · `); }
+      catch (e) { zle.push(`${k.ubior}: ${(e as Error).message}`); }
+    }
+    setPraca(''); setInfo(`Przeszyte ${ostatniaNaModel.length - zle.length}/${ostatniaNaModel.length}.`);
+    if (zle.length) setBlad(zle.join(' · '));
+  };
   const zrobPakiet = async () => {
     setBlad(''); setPakiet(null); setPraca('Składam pakiet Shopify…');
     try {
@@ -213,6 +224,9 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
         <button onClick={() => void uszyjWszystkie()} disabled={!!praca || !wyciety} title="Po jednym z każdego modelu, każdy z inną opowieścią z serialu; kurtki naszywkami" className="ml-3 rounded-lg border px-4 py-2 text-sm disabled:opacity-40" style={{ borderColor: themeConfig.hex }}>
           🧺 Uszyj wszystkie modele ({Object.keys(ubiory).length})
         </button>
+        {ostatniaNaModel.length > 0 && <button onClick={() => void przeszyjWszystkie()} disabled={!!praca || !wyciety} title="Te same opowieści, nowy napis blokowy i sentencja z formularza" className="ml-3 rounded-lg border px-4 py-2 text-sm disabled:opacity-40" style={{ borderColor: themeConfig.borderHex }}>
+          ↻ Przeszyj {ostatniaNaModel.length} z nowym napisem
+        </button>}
         {ostatniaNaModel.length > 0 && <div className="space-y-2 rounded border p-3 text-xs" style={{ borderColor: themeConfig.borderHex }}>
           <b>🛍️ Pakiet do Shopify — {imieSklepu} ({ostatniaNaModel.length} produktów: najnowsza kolekcja każdego modelu; produkty wchodzą jako SZKICE)</b>
           <div className="flex flex-wrap gap-2">{ostatniaNaModel.map((k) => <label key={k.ubior}>{ubiory[k.ubior]?.nazwa ?? k.ubior}<br /><input value={ceny[k.ubior] ?? ''} onChange={(e) => setCeny({ ...ceny, [k.ubior]: e.target.value })} placeholder="cena" className="w-20 rounded bg-black/40 px-2 py-1" /></label>)}
