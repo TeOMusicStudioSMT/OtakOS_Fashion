@@ -32,8 +32,15 @@ export const UBIORY: Record<string, { nazwa: string; prompt: string; x: number; 
     bluza: { nazwa: 'Bluza z kapturem', prompt: 'pullover hoodie with hood', x: 0.5, y: 0.47, skala: 0.28 },
     longsleeve: { nazwa: 'Longsleeve', prompt: 'long sleeve t-shirt', x: 0.5, y: 0.42, skala: 0.28 },
     torba: { nazwa: 'Torba bawełniana', prompt: 'cotton canvas tote bag', x: 0.5, y: 0.58, skala: 0.42 },
+    bomber: { nazwa: '🧥 Bomberka', prompt: 'MA-1 style bomber jacket with ribbed collar, cuffs and waistband, front zipper', x: 0.5, y: 0.42, skala: 0.3 },
+    jeansowa: { nazwa: '🧥 Kurtka jeansowa', prompt: 'classic denim trucker jacket with button front and chest pockets', x: 0.5, y: 0.44, skala: 0.28 },
+    ramoneska: { nazwa: '🧥 Ramoneska (skórzana)', prompt: 'leather biker jacket with asymmetric zipper and wide lapels', x: 0.5, y: 0.44, skala: 0.26 },
+    parka: { nazwa: '🧥 Parka z kapturem', prompt: 'long hooded parka coat with zipper and flap pockets', x: 0.5, y: 0.4, skala: 0.28 },
+    plaszcz: { nazwa: '🧥 Płaszcz (trencz)', prompt: 'long double-breasted trench coat with belt and wide lapels, knee length', x: 0.5, y: 0.36, skala: 0.24 },
     kurtka: { nazwa: '🧥 Kurtka Bejsbolówka (Varsity)', prompt: 'varsity baseball jacket body with contrasting cream white leather sleeves, striped rib-knit collar, cuffs and waistband, snap buttons', x: 0.5, y: 0.42, skala: 0.3 },
 };
+/** Ubiory z długim rękawem (3 naszywki na rękaw) — ta sama lista w src/components/Kolekcja360.tsx. */
+export const DLUGIE_REKAWY = ['bluza', 'longsleeve', 'kurtka', 'bomber', 'jeansowa', 'ramoneska', 'parka', 'plaszcz'];
 export const KOLORY: Record<string, string> = { czarny: 'black', bialy: 'white', grafitowy: 'charcoal grey', granatowy: 'navy blue', zielony: 'forest green', piaskowy: 'sand beige', burgundowy: 'burgundy' };
 /** Gałęzie Pracowni, z których bierzemy motywy (krainy i otoczenie to koncepty scen — na nadruk słabo). */
 export const GALEZIE_MOTYWOW = ['mini-teogochi', 'postacie', 'stwory', 'wierzchowce', 'rekwizyty', 'ekwipunek'];

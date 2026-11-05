@@ -16,7 +16,7 @@ import crypto from 'crypto';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { FFMPEG } from './marki';
-import { UBIORY, KOLORY, makieta, motywy, pobierz, wymiary } from './nadruki';
+import { UBIORY, KOLORY, DLUGIE_REKAWY, makieta, motywy, pobierz, wymiary } from './nadruki';
 import { stanKrawca } from './krawiec-lokalny';
 
 const uruchom = promisify(execFile);
@@ -36,7 +36,7 @@ const DLUGI_REKAW = { 'rekaw-p': { x: 0.115, y: 0.6, w: 0.055, rot: 10 }, 'rekaw
 const KROTKI_REKAW = { 'rekaw-p': { x: 0.14, y: 0.29, w: 0.07, rot: 28 }, 'rekaw-l': { x: 0.86, y: 0.29, w: 0.07, rot: -28 } };
 /** Naszywki haftu (styl „haft”): pierś lewa (blok) i prawa (kursywa), plecy + dół pleców, kaskada 3 naszywek na rękawach. */
 function pozycjeHaftu(ubior: string): { przod: Record<string, Pozycja>; tyl: Record<string, Pozycja> } {
-    const dlugi = ['bluza', 'longsleeve', 'kurtka'].includes(ubior);
+    const dlugi = DLUGIE_REKAWY.includes(ubior);
     const rekawP: Record<string, Pozycja> = {}, rekawL: Record<string, Pozycja> = {};
     if (ubior === 'koszulka') { rekawP['rekaw-p-1'] = { x: 0.14, y: 0.29, w: 0.07, rot: 28 }; rekawL['rekaw-l-1'] = { x: 0.86, y: 0.29, w: 0.07, rot: -28 }; }
     if (dlugi) for (const [i, f] of [0.32, 0.48, 0.64].entries()) {
@@ -176,28 +176,45 @@ export async function zloz(id: string): Promise<Kolekcja> {
     return k;
 }
 
-/** ✨ Opowieść na plecy: lokalny model krawca pisze z opisu motywu (JSON, jedna poprawka). */
-export async function opowiesc(obraz: string, jezyk: 'pl' | 'en' = 'pl'): Promise<Kolekcja['tekst']> {
-    const motyw = (await motywy()).find((m) => m.id === obraz);
-    if (!motyw) throw new Error('Nie ma takiego motywu w Pracowni.');
+/** Języki tekstów na ubraniu (nazwa dla modelu). */
+export const JEZYKI: Record<string, string> = { pl: 'polski', en: 'English', de: 'Deutsch', es: 'español', fr: 'français', it: 'italiano', ja: '日本語 (Japanese)', uk: 'українська' };
+const nazwaJezyka = (j: string) => JEZYKI[j] ?? JEZYKI.pl;
+
+/** Jedno pytanie do krawca (Ollama, JSON) — wspólne dla opowieści i tłumaczenia; zły JSON = jedna poprawka. */
+async function krawiecJson(system: string, prompt: string, temperatura: number, dobre: (t: Kolekcja['tekst']) => boolean): Promise<Kolekcja['tekst']> {
     const stan = await stanKrawca();
     if (!stan.zywy) throw new Error(stan.powod ?? 'Krawiec lokalny nie jest gotowy.');
-    const system = `Jesteś Kronikarzem Teterhii — piszesz LORE na plecy streetwearowej bluzy z Katedry OtakOS. Język: ${jezyk === 'en' ? 'English' : 'polski'}.
-Zwięźle, baśniowo albo mrocznie, z obrazem w słowach; bez cudzych chronionych postaci i bez nazw marek.
-Odpowiedz WYŁĄCZNIE JSON-em: {"tytul":"≤ 3 słowa, IMIĘ albo przydomek","podtytul":"≤ 6 słów","zywiol":"jedno słowo","opowiesc":"2–3 zdania, łącznie ≤ 320 znaków","cytat":"krótka maksyma ≤ 12 słów"}`;
-    let prompt = `MOTYW (opis z Pracowni): ${motyw.opis}`;
     for (let proba = 0; proba < 2; proba++) {
         const r = await fetch(`${OLLAMA}/api/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: AbortSignal.timeout(5 * 60 * 1000),
-            body: JSON.stringify({ model: stan.model, stream: false, think: false, format: 'json', options: { temperature: 0.9, num_ctx: 4096 }, messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }] }) });
+            body: JSON.stringify({ model: stan.model, stream: false, think: false, format: 'json', options: { temperature: temperatura, num_ctx: 4096 }, messages: [{ role: 'system', content: system }, { role: 'user', content: prompt }] }) });
         if (!r.ok) throw new Error(`Ollama HTTP ${r.status}`);
         const d = await r.json() as { message?: { content?: string } };
-        try {
-            const t = oczyscTekst(JSON.parse(String(d.message?.content ?? '').replace(/<think>[\s\S]*?<\/think>/g, '')));
-            if (t.tytul && t.opowiesc) return { ...t, edycja: `ARCHIVE // 0.00G · Nº ${parseInt(crypto.createHash('sha1').update(obraz).digest('hex').slice(0, 4), 16) % 900 + 100}` };   // stały numer motywu
-        } catch { /* jedna poprawka */ }
-        prompt += '\n\nPOPRZEDNIA ODPOWIEDŹ BYŁA ZŁA — oddaj sam poprawny JSON z polami tytul i opowiesc.';
+        try { const t = oczyscTekst(JSON.parse(String(d.message?.content ?? '').replace(/<think>[\s\S]*?<\/think>/g, ''))); if (dobre(t)) return t; } catch { /* poprawka */ }
+        prompt += '\n\nPOPRZEDNIA ODPOWIEDŹ BYŁA ZŁA — oddaj sam poprawny JSON z wszystkimi polami.';
     }
-    throw new Error('Krawiec dwa razy nie oddał opowieści w formacie JSON.');
+    throw new Error('Krawiec dwa razy nie oddał poprawnego JSON-a.');
+}
+
+/** 🌍 Przekład wszystkich tekstów ubioru na wybrany język (nazwy własne i rytm napisów zostają). */
+export async function przetlumacz(tekst: any, jezyk: string): Promise<Kolekcja['tekst']> {
+    const t = oczyscTekst(tekst);
+    if (!JEZYKI[jezyk]) throw new Error(`Język: ${Object.keys(JEZYKI).join(', ')}.`);
+    const pola = Object.fromEntries(Object.entries(t).filter(([k, v]) => v && k !== 'edycja'));
+    if (!Object.keys(pola).length) throw new Error('Nie ma czego tłumaczyć.');
+    const system = `Tłumaczysz napisy na streetwearowe ubranie z Katedry OtakOS na język: ${nazwaJezyka(jezyk)}. Przekład krótki i chwytliwy jak oryginał (napisy na odzieży), ten sam nastrój; imiona i nazwy własne (Teterhia, TeOgochi, OtakOS, 0.00G) zostawiasz albo transliterujesz. Odpowiedz WYŁĄCZNIE JSON-em z TYMI SAMYMI kluczami: ${Object.keys(pola).join(', ')}.`;
+    const wynik = await krawiecJson(system, JSON.stringify(pola), 0.3, (w) => Object.keys(pola).every((k) => (w as any)[k]));
+    return { ...t, ...Object.fromEntries(Object.keys(pola).map((k) => [k, (wynik as any)[k]])) };
+}
+
+/** ✨ Opowieść na plecy: lokalny model krawca pisze z opisu motywu (JSON, jedna poprawka). */
+export async function opowiesc(obraz: string, jezyk = 'pl'): Promise<Kolekcja['tekst']> {
+    const motyw = (await motywy()).find((m) => m.id === obraz);
+    if (!motyw) throw new Error('Nie ma takiego motywu w Pracowni.');
+    const system = `Jesteś Kronikarzem Teterhii — piszesz LORE na plecy streetwearowej bluzy z Katedry OtakOS. Język WSZYSTKICH pól: ${nazwaJezyka(jezyk)}.
+Zwięźle, baśniowo albo mrocznie, z obrazem w słowach; bez cudzych chronionych postaci i bez nazw marek.
+Odpowiedz WYŁĄCZNIE JSON-em: {"tytul":"≤ 3 słowa, IMIĘ albo przydomek","podtytul":"≤ 6 słów","zywiol":"jedno słowo","opowiesc":"2–3 zdania, łącznie ≤ 320 znaków","cytat":"krótka maksyma ≤ 12 słów"}`;
+    const tekst = await krawiecJson(system, `MOTYW (opis z Pracowni): ${motyw.opis}`, 0.9, (w) => !!(w.tytul && w.opowiesc));
+    return { ...tekst, edycja: `ARCHIVE // 0.00G · Nº ${parseInt(crypto.createHash('sha1').update(obraz).digest('hex').slice(0, 4), 16) % 900 + 100}` };   // stały numer motywu
 }
 
 /** Ustaw tekst kolekcji (po poprawkach Suwerena) — strefy trzeba wtedy przerysować w przeglądarce. */

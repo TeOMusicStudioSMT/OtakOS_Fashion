@@ -7,6 +7,9 @@ import { useTheme } from '../context/ThemeContext';
 import { Loader2, Sparkles, Download, Trash2 } from 'lucide-react';
 import { wczytajMotyw, wytnijTlo, paleta, imieZOpisu, przodPlakat, przodHerb, plecy, rekaw, doPng, naszywkaBlok, haftKursywa, plecyHaft, naszywkaPostaci, naszywkaGlowy, naszywkaSymbol, type TekstKolekcji } from '../utils/kompozycja360';
 
+/** Ubiory z długim rękawem — ta sama lista co DLUGIE_REKAWY w nadruki.ts (serwer). */
+const DLUGIE_REKAWY = ['bluza', 'longsleeve', 'kurtka', 'bomber', 'jeansowa', 'ramoneska', 'parka', 'plaszcz'];
+
 interface Motyw { id: string; opis: string; galaz: string | null }
 interface Kolekcja { id: string; obraz: string; ubior: string; kolor: string; uklad: string; tekst: TekstKolekcji; strefy: Record<string, string>; makietaPrzod?: string; makietaTyl?: string; arkusz?: string; stan: string; kiedy: string }
 
@@ -23,8 +26,11 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
   const [kolor, setKolor] = useState('czarny');
   const [uklad, setUklad] = useState<'plakat' | 'herb'>('plakat');
   const [styl, setStyl] = useState<'plaski' | 'haft'>('plaski');
-  useEffect(() => { if (ubior === 'kurtka') setStyl('haft'); }, [ubior]);
+  useEffect(() => { if (['kurtka', 'bomber', 'jeansowa', 'ramoneska'].includes(ubior)) setStyl('haft'); }, [ubior]);
   const [tekst, setTekst] = useState<TekstKolekcji>({});
+  // 🌍 język napisów na ubraniu (zapamiętany); opowieść pisze się od razu w nim, przycisk tłumaczy wszystkie pola
+  const [jezyk, setJezyk] = useState(() => { try { return localStorage.getItem('fashion_jezyk_napisow') || 'pl'; } catch { return 'pl'; } });
+  useEffect(() => { try { localStorage.setItem('fashion_jezyk_napisow', jezyk); } catch { /* — */ } }, [jezyk]);
   const [wyciety, setWyciety] = useState<HTMLCanvasElement | null>(null);
   const [kolekcje, setKolekcje] = useState<Kolekcja[]>([]);
   const [praca, setPraca] = useState('');
@@ -48,7 +54,7 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
         'przod-l': naszywkaBlok(tekst.blok || 'TETHERIA', pal), 'przod-p': haftKursywa(tekst.cytat || tekst.tytul || ''),
         tyl: plecyHaft(wyciety, tekst, pal), 'tyl-dol': haftKursywa(tekst.sentencja || tekst.cytat || ''),
       };
-      const dlugi = ['bluza', 'longsleeve', 'kurtka'].includes(ubior);
+      const dlugi = DLUGIE_REKAWY.includes(ubior);
       if (ubior !== 'torba') {
         h['rekaw-l-1'] = naszywkaGlowy(wyciety); h['rekaw-p-1'] = naszywkaSymbol('ᛋ', 'KATEDRA', pal);
         if (dlugi) {
@@ -82,7 +88,12 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
   const dopisz = async () => {
     if (!motyw) return;
     setPraca('opowiesc'); setBlad('');
-    try { const d = await api<{ tekst: TekstKolekcji }>('/api/nadruki/opowiesc', { method: 'POST', body: JSON.stringify({ obraz: motyw.id }) }); setTekst(d.tekst); }
+    try { const d = await api<{ tekst: TekstKolekcji }>('/api/nadruki/opowiesc', { method: 'POST', body: JSON.stringify({ obraz: motyw.id, jezyk }) }); setTekst({ ...d.tekst, blok: tekst.blok, sentencja: tekst.sentencja }); }
+    catch (e) { setBlad((e as Error).message); } finally { setPraca(''); }
+  };
+  const przetlumacz = async () => {
+    setPraca('tlumacz'); setBlad('');
+    try { const d = await api<{ tekst: TekstKolekcji }>('/api/nadruki/przetlumacz', { method: 'POST', body: JSON.stringify({ tekst, jezyk }) }); setTekst(d.tekst); }
     catch (e) { setBlad((e as Error).message); } finally { setPraca(''); }
   };
 
@@ -123,6 +134,12 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
           <label className="text-xs">Kolor<br /><select value={kolor} onChange={(e) => setKolor(e.target.value)} className="rounded bg-black/40 px-2 py-1">{Object.keys(kolory).map((k) => <option key={k} value={k}>{k}</option>)}</select></label>
           <label className="text-xs">Wykonanie<br /><select value={styl} onChange={(e) => setStyl(e.target.value as 'plaski' | 'haft')} className="rounded bg-black/40 px-2 py-1"><option value="plaski">Nadruk płaski</option><option value="haft">🧵 Naszywka haftowana (chenille)</option></select></label>
           <label className="text-xs">Przód<br /><select value={uklad} onChange={(e) => setUklad(e.target.value as 'plakat' | 'herb')} className="rounded bg-black/40 px-2 py-1"><option value="plakat">Pełny Plakat</option><option value="herb">Herb na Sercu</option></select></label>
+          <label className="text-xs">Język napisów<br /><select value={jezyk} onChange={(e) => setJezyk(e.target.value)} className="rounded bg-black/40 px-2 py-1">
+            {[['pl', '🇵🇱 polski'], ['en', '🇬🇧 English'], ['de', '🇩🇪 Deutsch'], ['es', '🇪🇸 español'], ['fr', '🇫🇷 français'], ['it', '🇮🇹 italiano'], ['ja', '🇯🇵 日本語'], ['uk', '🇺🇦 українська']].map(([k, n]) => <option key={k} value={k}>{n}</option>)}
+          </select></label>
+          <button onClick={() => void przetlumacz()} disabled={!!praca} title="Przekłada wszystkie pola tekstowe na wybrany język (lokalny model krawca)" className="rounded-lg border px-3 py-2 text-xs disabled:opacity-40" style={{ borderColor: themeConfig.hex }}>
+            {praca === 'tlumacz' ? <><Loader2 className="mr-1 inline h-3 w-3 animate-spin" />tłumaczę…</> : '🌍 Przetłumacz wszystko'}
+          </button>
           <button onClick={() => void dopisz()} disabled={!!praca} className="rounded-lg border px-3 py-2 text-xs disabled:opacity-40" style={{ borderColor: themeConfig.hex }}>
             {praca === 'opowiesc' ? <><Loader2 className="mr-1 inline h-3 w-3 animate-spin" />Kronikarz pisze…</> : <><Sparkles className="mr-1 inline h-3 w-3" />Dopisz opowieść (Kronikarz)</>}
           </button>

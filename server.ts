@@ -225,10 +225,14 @@ app.get('/api/nadruki/motyw/:id', async (req, res) => {
   } catch { res.status(502).end(); }
 });
 app.post('/api/nadruki/opowiesc', async (req, res) => {
-  try { res.json({ tekst: await Kolekcje.opowiesc(String(req.body?.obraz ?? ''), req.body?.jezyk === 'en' ? 'en' : 'pl') }); }
+  try { res.json({ tekst: await Kolekcje.opowiesc(String(req.body?.obraz ?? ''), String(req.body?.jezyk ?? 'pl')) }); }
   catch (err: any) { res.status(422).json({ error: String(err?.message ?? err) }); }
 });
-app.get('/api/nadruki/kolekcje', async (_req, res) => { res.json({ kolekcje: await Kolekcje.lista(), uklady: Kolekcje.UKLADY_PRZODU }); });
+app.post('/api/nadruki/przetlumacz', async (req, res) => {
+  try { res.json({ tekst: await Kolekcje.przetlumacz(req.body?.tekst, String(req.body?.jezyk ?? 'en')) }); }
+  catch (err: any) { res.status(422).json({ error: String(err?.message ?? err) }); }
+});
+app.get('/api/nadruki/kolekcje', async (_req, res) => { res.json({ kolekcje: await Kolekcje.lista(), uklady: Kolekcje.UKLADY_PRZODU, jezyki: Kolekcje.JEZYKI }); });
 app.post('/api/nadruki/kolekcje', async (req, res) => {
   try { res.json({ kolekcja: await Kolekcje.nowa(req.body ?? {}) }); }
   catch (err: any) { res.status(422).json({ error: String(err?.message ?? err) }); }
