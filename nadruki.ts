@@ -32,8 +32,9 @@ export const UBIORY: Record<string, { nazwa: string; prompt: string; x: number; 
     bluza: { nazwa: 'Bluza z kapturem', prompt: 'pullover hoodie with hood', x: 0.5, y: 0.47, skala: 0.28 },
     longsleeve: { nazwa: 'Longsleeve', prompt: 'long sleeve t-shirt', x: 0.5, y: 0.42, skala: 0.28 },
     torba: { nazwa: 'Torba bawełniana', prompt: 'cotton canvas tote bag', x: 0.5, y: 0.58, skala: 0.42 },
+    kurtka: { nazwa: '🧥 Kurtka Bejsbolówka (Varsity)', prompt: 'varsity baseball jacket body with contrasting cream white leather sleeves, striped rib-knit collar, cuffs and waistband, snap buttons', x: 0.5, y: 0.42, skala: 0.3 },
 };
-export const KOLORY: Record<string, string> = { czarny: 'black', bialy: 'white', grafitowy: 'charcoal grey', granatowy: 'navy blue', zielony: 'forest green', piaskowy: 'sand beige' };
+export const KOLORY: Record<string, string> = { czarny: 'black', bialy: 'white', grafitowy: 'charcoal grey', granatowy: 'navy blue', zielony: 'forest green', piaskowy: 'sand beige', burgundowy: 'burgundy' };
 /** Gałęzie Pracowni, z których bierzemy motywy (krainy i otoczenie to koncepty scen — na nadruk słabo). */
 export const GALEZIE_MOTYWOW = ['mini-teogochi', 'postacie', 'stwory', 'wierzchowce', 'rekwizyty', 'ekwipunek'];
 

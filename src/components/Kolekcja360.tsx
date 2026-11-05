@@ -5,7 +5,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Loader2, Sparkles, Download, Trash2 } from 'lucide-react';
-import { wczytajMotyw, wytnijTlo, paleta, imieZOpisu, przodPlakat, przodHerb, plecy, rekaw, doPng, type TekstKolekcji } from '../utils/kompozycja360';
+import { wczytajMotyw, wytnijTlo, paleta, imieZOpisu, przodPlakat, przodHerb, plecy, rekaw, doPng, naszywkaBlok, haftKursywa, plecyHaft, naszywkaPostaci, naszywkaGlowy, naszywkaSymbol, type TekstKolekcji } from '../utils/kompozycja360';
 
 interface Motyw { id: string; opis: string; galaz: string | null }
 interface Kolekcja { id: string; obraz: string; ubior: string; kolor: string; uklad: string; tekst: TekstKolekcji; strefy: Record<string, string>; makietaPrzod?: string; makietaTyl?: string; arkusz?: string; stan: string; kiedy: string }
@@ -22,6 +22,8 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
   const [ubior, setUbior] = useState('bluza');
   const [kolor, setKolor] = useState('czarny');
   const [uklad, setUklad] = useState<'plakat' | 'herb'>('plakat');
+  const [styl, setStyl] = useState<'plaski' | 'haft'>('plaski');
+  useEffect(() => { if (ubior === 'kurtka') setStyl('haft'); }, [ubior]);
   const [tekst, setTekst] = useState<TekstKolekcji>({});
   const [wyciety, setWyciety] = useState<HTMLCanvasElement | null>(null);
   const [kolekcje, setKolekcje] = useState<Kolekcja[]>([]);
@@ -33,13 +35,29 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
   useEffect(() => {
     setWyciety(null);
     if (!motyw) return;
-    setTekst((t) => ({ ...t, tytul: imieZOpisu(motyw.opis) }));
+    setTekst((t) => ({ blok: 'TETHERIA', sentencja: 'From 0 & 1 to Infinity — Rodzina Jest Na Zawsze', ...t, tytul: imieZOpisu(motyw.opis) }));
     void wczytajMotyw(motyw.id).then((img) => setWyciety(wytnijTlo(img))).catch((e) => setBlad(`Motyw się nie wczytał: ${e.message}`));
   }, [motyw?.id]);
 
   const strefy = () => {
     if (!wyciety || !motyw) return null;
     const pal = paleta(kolor);
+    if (styl === 'haft') {
+      // 🧵 naszywki: pierś lewa = blok varsity, prawa = haft kursywą; plecy = blok pionowo + wielka naszywka postaci; dół pleców = sentencja
+      const h: Record<string, HTMLCanvasElement> = {
+        'przod-l': naszywkaBlok(tekst.blok || 'TETHERIA', pal), 'przod-p': haftKursywa(tekst.cytat || tekst.tytul || ''),
+        tyl: plecyHaft(wyciety, tekst, pal), 'tyl-dol': haftKursywa(tekst.sentencja || tekst.cytat || ''),
+      };
+      const dlugi = ['bluza', 'longsleeve', 'kurtka'].includes(ubior);
+      if (ubior !== 'torba') {
+        h['rekaw-l-1'] = naszywkaGlowy(wyciety); h['rekaw-p-1'] = naszywkaSymbol('ᛋ', 'KATEDRA', pal);
+        if (dlugi) {
+          h['rekaw-l-2'] = naszywkaSymbol('8', '∞  0.00G', pal); h['rekaw-l-3'] = naszywkaBlok((tekst.zywiol || 'ZERO').slice(0, 10), pal, 1600);
+          h['rekaw-p-2'] = naszywkaSymbol('0', 'ZERO 0.00G', pal); h['rekaw-p-3'] = naszywkaBlok((tekst.tytul || 'TEO').slice(0, 10), pal, 1600);
+        }
+      }
+      return h;
+    }
     const s: Record<string, HTMLCanvasElement> = {
       przod: uklad === 'herb' ? przodHerb(wyciety, tekst, pal, motyw.id) : przodPlakat(wyciety, tekst, pal, motyw.id),
       tyl: plecy(wyciety, tekst, pal, motyw.id),
@@ -59,7 +77,7 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
       c.style.width = '100%'; c.style.height = 'auto'; c.style.display = 'block';
       el.appendChild(c);
     }
-  }, [wyciety, tekst, kolor, uklad, ubior]);
+  }, [wyciety, tekst, kolor, uklad, ubior, styl]);
 
   const dopisz = async () => {
     if (!motyw) return;
@@ -74,7 +92,7 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
     setBlad('');
     try {
       setPraca('Makiety przodu i tyłu (pierwszy raz FLUX — do kilku minut)…');
-      const { kolekcja } = await api<{ kolekcja: Kolekcja }>('/api/nadruki/kolekcje', { method: 'POST', body: JSON.stringify({ obraz: motyw.id, ubior, kolor, uklad, tekst }) });
+      const { kolekcja } = await api<{ kolekcja: Kolekcja }>('/api/nadruki/kolekcje', { method: 'POST', body: JSON.stringify({ obraz: motyw.id, ubior, kolor, uklad, styl, tekst }) });
       for (const [nazwa, c] of Object.entries(s)) {
         setPraca(`Wgrywam strefę ${nazwa} (4096 px)…`);
         const r = await fetch(`/api/nadruki/kolekcje/${kolekcja.id}/strefa/${nazwa}`, { method: 'POST', headers: { 'Content-Type': 'image/png' }, body: await doPng(c) });
@@ -93,7 +111,7 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
         : <input value={tekst[k] ?? ''} onChange={(e) => setTekst({ ...tekst, [k]: e.target.value })} className="w-full rounded bg-black/40 px-2 py-1" />}
     </label>
   );
-  const tlo = { czarny: '#111', bialy: '#f4f4f0', grafitowy: '#3a3b40', granatowy: '#1b2340', zielony: '#1f3a2c', piaskowy: '#d8c7a5' }[kolor] ?? '#222';
+  const tlo = ({ czarny: '#111', bialy: '#f4f4f0', grafitowy: '#3a3b40', granatowy: '#1b2340', zielony: '#1f3a2c', piaskowy: '#d8c7a5', burgundowy: '#4a1420' } as Record<string, string>)[kolor] ?? '#222';
 
   return (
     <div className="space-y-4 rounded-xl border p-4" style={{ borderColor: themeConfig.hex }}>
@@ -103,17 +121,19 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
         <div className="flex flex-wrap items-end gap-3">
           <label className="text-xs">Ubiór<br /><select value={ubior} onChange={(e) => setUbior(e.target.value)} className="rounded bg-black/40 px-2 py-1">{Object.keys(ubiory).map((id) => <option key={id} value={id}>{ubiory[id].nazwa}</option>)}</select></label>
           <label className="text-xs">Kolor<br /><select value={kolor} onChange={(e) => setKolor(e.target.value)} className="rounded bg-black/40 px-2 py-1">{Object.keys(kolory).map((k) => <option key={k} value={k}>{k}</option>)}</select></label>
+          <label className="text-xs">Wykonanie<br /><select value={styl} onChange={(e) => setStyl(e.target.value as 'plaski' | 'haft')} className="rounded bg-black/40 px-2 py-1"><option value="plaski">Nadruk płaski</option><option value="haft">🧵 Naszywka haftowana (chenille)</option></select></label>
           <label className="text-xs">Przód<br /><select value={uklad} onChange={(e) => setUklad(e.target.value as 'plakat' | 'herb')} className="rounded bg-black/40 px-2 py-1"><option value="plakat">Pełny Plakat</option><option value="herb">Herb na Sercu</option></select></label>
           <button onClick={() => void dopisz()} disabled={!!praca} className="rounded-lg border px-3 py-2 text-xs disabled:opacity-40" style={{ borderColor: themeConfig.hex }}>
             {praca === 'opowiesc' ? <><Loader2 className="mr-1 inline h-3 w-3 animate-spin" />Kronikarz pisze…</> : <><Sparkles className="mr-1 inline h-3 w-3" />Dopisz opowieść (Kronikarz)</>}
           </button>
         </div>
         <div className="grid gap-2 md:grid-cols-3">{pole('tytul', 'Tytuł (imię)')}{pole('podtytul', 'Podtytuł')}{pole('zywiol', 'Żywioł')}</div>
+        {styl === 'haft' && <div className="grid gap-2 md:grid-cols-2">{pole('blok', 'Napis blokowy (pierś, plecy)')}{pole('sentencja', 'Sentencja kursywą (dół pleców)')}</div>}
         <div className="grid gap-2 md:grid-cols-2">{pole('opowiesc', 'Opowieść (plecy)', true)}<div className="space-y-2">{pole('cytat', 'Cytat')}{pole('edycja', 'Edycja')}</div></div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
-          {['przod', 'tyl', 'rekaw-l', 'rekaw-p'].filter((s) => ubior !== 'torba' || !s.startsWith('rekaw')).map((s) => (
+          {(styl === 'haft' ? ['przod-l', 'przod-p', 'tyl', 'tyl-dol', 'rekaw-l-1', 'rekaw-l-2', 'rekaw-l-3', 'rekaw-p-1', 'rekaw-p-2', 'rekaw-p-3'] : ['przod', 'tyl', 'rekaw-l', 'rekaw-p']).filter((s) => ubior !== 'torba' || !s.startsWith('rekaw')).map((s) => (
             <div key={s} className={s.startsWith('rekaw') ? 'col-span-1' : 'col-span-2'}>
-              <p className="mb-1 text-[10px] uppercase opacity-60">{{ przod: uklad === 'herb' ? 'Przód · herb' : 'Przód · plakat', tyl: 'Plecy · opowieść', 'rekaw-l': 'Lewy rękaw', 'rekaw-p': 'Prawy rękaw' }[s]}</p>
+              <p className="mb-1 text-[10px] uppercase opacity-60">{({ przod: uklad === 'herb' ? 'Przód · herb' : 'Przód · plakat', tyl: styl === 'haft' ? 'Plecy · naszywki' : 'Plecy · opowieść', 'rekaw-l': 'Lewy rękaw', 'rekaw-p': 'Prawy rękaw', 'przod-l': 'Pierś lewa · blok', 'przod-p': 'Pierś prawa · kursywa', 'tyl-dol': 'Dół pleców · kursywa' } as Record<string, string>)[s] ?? s.replace('rekaw-l-', 'Lewy rękaw ').replace('rekaw-p-', 'Prawy rękaw ')}</p>
               <div ref={(el) => { podglady.current[s] = el; }} className="rounded p-2" style={{ background: tlo }} />
             </div>
           ))}

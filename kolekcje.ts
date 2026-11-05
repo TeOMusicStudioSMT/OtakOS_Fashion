@@ -25,15 +25,35 @@ const PUBLIC = path.join(process.cwd(), 'public');
 const KAT = path.join(PUBLIC, 'nadruki', 'kolekcje');
 const ID = /^k-[0-9a-f]{8}$/;
 
-export const STREFY = ['przod', 'tyl', 'rekaw-l', 'rekaw-p'] as const;
+export const STREFY = ['przod', 'przod-l', 'przod-p', 'tyl', 'tyl-dol', 'rekaw-l', 'rekaw-p', 'rekaw-l-1', 'rekaw-l-2', 'rekaw-l-3', 'rekaw-p-1', 'rekaw-p-2', 'rekaw-p-3'] as const;
 export type Strefa = typeof STREFY[number];
+export const STYLE = ['plaski', 'haft'] as const;
 export const UKLADY_PRZODU = ['plakat', 'herb'] as const;
 
 /** Gdzie strefa siada na makiecie (ułamki szerokości/wysokości kadru, środek; obrót w stopniach). Rękaw „p” = prawy NOSZĄCEGO. */
 type Pozycja = { x: number; y: number; w: number; rot?: number };
 const DLUGI_REKAW = { 'rekaw-p': { x: 0.115, y: 0.6, w: 0.055, rot: 10 }, 'rekaw-l': { x: 0.885, y: 0.6, w: 0.055, rot: -10 } };
 const KROTKI_REKAW = { 'rekaw-p': { x: 0.14, y: 0.29, w: 0.07, rot: 28 }, 'rekaw-l': { x: 0.86, y: 0.29, w: 0.07, rot: -28 } };
-export function pozycje(ubior: string, uklad: string): { przod: Record<string, Pozycja>; tyl: Record<string, Pozycja> } {
+/** Naszywki haftu (styl „haft”): pierś lewa (blok) i prawa (kursywa), plecy + dół pleców, kaskada 3 naszywek na rękawach. */
+function pozycjeHaftu(ubior: string): { przod: Record<string, Pozycja>; tyl: Record<string, Pozycja> } {
+    const dlugi = ['bluza', 'longsleeve', 'kurtka'].includes(ubior);
+    const rekawP: Record<string, Pozycja> = {}, rekawL: Record<string, Pozycja> = {};
+    if (ubior === 'koszulka') { rekawP['rekaw-p-1'] = { x: 0.14, y: 0.29, w: 0.07, rot: 28 }; rekawL['rekaw-l-1'] = { x: 0.86, y: 0.29, w: 0.07, rot: -28 }; }
+    if (dlugi) for (const [i, f] of [0.32, 0.48, 0.64].entries()) {
+        rekawP[`rekaw-p-${i + 1}`] = { x: 0.19 - i * 0.035, y: f, w: 0.095, rot: 8 };
+        rekawL[`rekaw-l-${i + 1}`] = { x: 0.81 + i * 0.035, y: f, w: 0.095, rot: -8 };
+    }
+    const zTylu: Record<string, Pozycja> = {};   // z tyłu rękawy zamieniają się stronami kadru
+    for (const [k, p] of Object.entries(rekawP)) zTylu[k.replace('-p-', '-L-')] = { ...p, x: 1 - p.x, rot: -(p.rot ?? 0) };
+    for (const [k, p] of Object.entries(rekawL)) zTylu[k.replace('-l-', '-P-')] = { ...p, x: 1 - p.x, rot: -(p.rot ?? 0) };
+    const tylR = Object.fromEntries(Object.entries(zTylu).map(([k, p]) => [k.replace('-L-', '-p-').replace('-P-', '-l-'), p]));
+    return {
+        przod: { 'przod-l': { x: 0.64, y: 0.34, w: 0.17 }, 'przod-p': { x: 0.36, y: 0.35, w: 0.22 }, ...rekawP, ...rekawL },
+        tyl: { tyl: { x: 0.5, y: ubior === 'bluza' ? 0.5 : 0.44, w: 0.54 }, 'tyl-dol': { x: 0.5, y: 0.7, w: 0.5 }, ...tylR },
+    };
+}
+export function pozycje(ubior: string, uklad: string, styl = 'plaski'): { przod: Record<string, Pozycja>; tyl: Record<string, Pozycja> } {
+    if (styl === 'haft') return pozycjeHaftu(ubior);
     const rekawy = ubior === 'koszulka' ? KROTKI_REKAW : ubior === 'torba' ? null : DLUGI_REKAW;
     const piers = uklad === 'herb' ? { x: 0.63, y: 0.33, w: 0.12 } : { x: 0.5, y: ubior === 'torba' ? 0.58 : 0.45, w: ubior === 'torba' ? 0.42 : 0.34 };
     const plecy = { x: 0.5, y: ubior === 'bluza' ? 0.53 : ubior === 'torba' ? 0.58 : 0.47, w: ubior === 'torba' ? 0.42 : 0.4 };
@@ -43,8 +63,8 @@ export function pozycje(ubior: string, uklad: string): { przod: Record<string, P
 }
 
 export interface Kolekcja {
-    id: string; obraz: string; opisMotywu: string; ubior: string; kolor: string; uklad: string;
-    tekst: { tytul?: string; podtytul?: string; zywiol?: string; opowiesc?: string; cytat?: string; edycja?: string };
+    id: string; obraz: string; opisMotywu: string; ubior: string; kolor: string; uklad: string; styl?: string;
+    tekst: { tytul?: string; podtytul?: string; zywiol?: string; opowiesc?: string; cytat?: string; edycja?: string; blok?: string; sentencja?: string };
     strefy: Partial<Record<Strefa, string>>; makietaPrzod?: string; makietaTyl?: string; arkusz?: string;
     stan: 'szkic' | 'gotowa'; kiedy: string; psnr?: Record<string, string | null>;
 }
@@ -64,11 +84,11 @@ export async function lista(): Promise<Kolekcja[]> {
 
 const tnij = (v: unknown, n: number) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
 function oczyscTekst(t: any): Kolekcja['tekst'] {
-    return { tytul: tnij(t?.tytul, 40), podtytul: tnij(t?.podtytul, 60), zywiol: tnij(t?.zywiol, 24), opowiesc: tnij(t?.opowiesc, 420), cytat: tnij(t?.cytat, 120), edycja: tnij(t?.edycja, 24) };
+    return { tytul: tnij(t?.tytul, 40), podtytul: tnij(t?.podtytul, 60), zywiol: tnij(t?.zywiol, 24), opowiesc: tnij(t?.opowiesc, 420), cytat: tnij(t?.cytat, 120), edycja: tnij(t?.edycja, 24), blok: tnij(t?.blok, 18), sentencja: tnij(t?.sentencja, 90) };
 }
 
 /** Nowa kolekcja: sprawdza motyw, dorysowuje (albo bierze z pamięci) makiety PRZÓD i TYŁ. */
-export async function nowa(wej: { obraz: string; ubior?: string; kolor?: string; uklad?: string; tekst?: any }): Promise<Kolekcja> {
+export async function nowa(wej: { obraz: string; ubior?: string; kolor?: string; uklad?: string; styl?: string; tekst?: any }): Promise<Kolekcja> {
     const ubior = UBIORY[String(wej.ubior)] ? String(wej.ubior) : 'bluza';
     const kolor = KOLORY[String(wej.kolor)] ? String(wej.kolor) : 'czarny';
     const uklad = (UKLADY_PRZODU as readonly string[]).includes(String(wej.uklad)) ? String(wej.uklad) : 'plakat';
@@ -76,7 +96,8 @@ export async function nowa(wej: { obraz: string; ubior?: string; kolor?: string;
     if (!motyw) throw new Error('Nie ma takiego motywu w Pracowni.');
     const id = `k-${crypto.randomBytes(4).toString('hex')}`;
     await fs.mkdir(dir(id), { recursive: true });
-    const k: Kolekcja = { id, obraz: motyw.id, opisMotywu: motyw.opis, ubior, kolor, uklad, tekst: oczyscTekst(wej.tekst), strefy: {}, stan: 'szkic', kiedy: new Date().toISOString() };
+    const styl = (STYLE as readonly string[]).includes(String(wej.styl)) ? String(wej.styl) : 'plaski';
+    const k: Kolekcja = { id, obraz: motyw.id, opisMotywu: motyw.opis, ubior, kolor, uklad, styl, tekst: oczyscTekst(wej.tekst), strefy: {}, stan: 'szkic', kiedy: new Date().toISOString() };
     for (const strona of ['przod', 'tyl'] as const) {
         const m = await makieta(ubior, kolor, { strona });   // FLUX tylko przy pierwszym razie dla ubioru+koloru+strony
         await pobierz(m.plik, path.join(dir(id), `makieta-${strona}.png`));
@@ -129,10 +150,10 @@ async function naloz(makietaPlik: string, warstwy: { plik: string; poz: Pozycja 
 /** Makiety PRZÓD i TYŁ ze strefami + arkusz produkcyjny (wszystkie strefy obok siebie, podpisane). */
 export async function zloz(id: string): Promise<Kolekcja> {
     const k = await czytaj(id);
-    const poz = pozycje(k.ubior, k.uklad);
+    const poz = pozycje(k.ubior, k.uklad, k.styl);
     const plik = (s: string) => path.join(dir(id), `strefa-${s}.png`);
     const ma = async (s: string) => fs.access(plik(s)).then(() => true, () => false);
-    if (!(await ma('przod')) || !(await ma('tyl'))) throw new Error('Najpierw wgraj strefy przodu i pleców.');
+    if (!((await ma('przod')) || (await ma('przod-l'))) || !(await ma('tyl'))) throw new Error('Najpierw wgraj strefy przodu i pleców.');
     k.psnr = {};
     for (const strona of ['przod', 'tyl'] as const) {
         const warstwy = [];
