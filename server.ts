@@ -7,6 +7,7 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { zaprojektuj as zaprojektujLokalnie, stanKrawca } from './krawiec-lokalny';
 import { kadry as kadryProdukcji, projekty as projektyKatedry, wykuj, kreacje as wczytajKreacje } from './jajo-mody';
 import { narysuj, lista as wczytajWizualizacje } from './wizualizacje';
+import * as Kolekcje from './kolekcje';
 import { lista as wczytajNadruki, motywy as motywyNadrukow, makieta as makietaUbioru, nadrukuj, usun as usunNadruk, UBIORY, KOLORY } from './nadruki';
 import { przeglad } from './dozorca';
 import { obroc, lista as wczytajObroty, wariantyWzoru, DLUGOSCI as DLUGOSCI_OBROTU } from './obrot';
@@ -211,6 +212,42 @@ app.post('/api/nadruki/makieta', async (req, res) => {
 app.post('/api/nadruki', async (req, res) => {
   try { res.json({ nadruk: await nadrukuj(req.body ?? {}) }); }
   catch (err: any) { res.status(422).json({ error: String(err?.message ?? err) }); }
+});
+// 👕🌀 Kolekcje 360° (kolekcje.ts): strefy rysuje przeglądarka (Canvas), serwer: makiety PRZÓD/TYŁ, pliki druku, arkusz, opowieść
+/** Obraz motywu z Pracowni Katedry — z tego samego originu, żeby Canvas nie był „skażony” (CORS). */
+app.get('/api/nadruki/motyw/:id', async (req, res) => {
+  try {
+    const m = (await motywyNadrukow()).find((x) => x.id === req.params.id);
+    if (!m) return res.status(404).end();
+    const r = await fetch(`${process.env.OTAKOS_MOST || 'http://127.0.0.1:3001'}${m.plik}`, { signal: AbortSignal.timeout(30000) });
+    if (!r.ok) return res.status(502).end();
+    res.type(r.headers.get('content-type') || 'image/png').send(Buffer.from(await r.arrayBuffer()));
+  } catch { res.status(502).end(); }
+});
+app.post('/api/nadruki/opowiesc', async (req, res) => {
+  try { res.json({ tekst: await Kolekcje.opowiesc(String(req.body?.obraz ?? ''), req.body?.jezyk === 'en' ? 'en' : 'pl') }); }
+  catch (err: any) { res.status(422).json({ error: String(err?.message ?? err) }); }
+});
+app.get('/api/nadruki/kolekcje', async (_req, res) => { res.json({ kolekcje: await Kolekcje.lista(), uklady: Kolekcje.UKLADY_PRZODU }); });
+app.post('/api/nadruki/kolekcje', async (req, res) => {
+  try { res.json({ kolekcja: await Kolekcje.nowa(req.body ?? {}) }); }
+  catch (err: any) { res.status(422).json({ error: String(err?.message ?? err) }); }
+});
+app.put('/api/nadruki/kolekcje/:id/tekst', async (req, res) => {
+  try { res.json({ kolekcja: await Kolekcje.ustawTekst(req.params.id, req.body?.tekst) }); }
+  catch (err: any) { res.status(422).json({ error: String(err?.message ?? err) }); }
+});
+app.post('/api/nadruki/kolekcje/:id/strefa/:strefa', express.raw({ type: 'image/png', limit: '60mb' }), async (req, res) => {
+  try { res.json({ kolekcja: await Kolekcje.wgrajStrefe(req.params.id, req.params.strefa, req.body) }); }
+  catch (err: any) { res.status(422).json({ error: String(err?.message ?? err) }); }
+});
+app.post('/api/nadruki/kolekcje/:id/zloz', async (req, res) => {
+  try { res.json({ kolekcja: await Kolekcje.zloz(req.params.id) }); }
+  catch (err: any) { res.status(422).json({ error: String(err?.message ?? err) }); }
+});
+app.delete('/api/nadruki/kolekcje/:id', async (req, res) => {
+  try { res.json(await Kolekcje.usun(req.params.id)); }
+  catch (err: any) { res.status(404).json({ error: String(err?.message ?? err) }); }
 });
 app.delete('/api/nadruki/:id', async (req, res) => {
   try { res.json({ usuniety: await usunNadruk(req.params.id) }); }

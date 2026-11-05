@@ -61,15 +61,15 @@ export async function motywy(): Promise<{ id: string; opis: string; galaz: strin
 }
 
 /** Pusta makieta ubioru: z pamięci wizualizacji albo narysowana raz (FLUX, ziarno stałe). */
-export async function makieta(ubior: string, kolor: string, { odNowa = false } = {}) {
+export async function makieta(ubior: string, kolor: string, { odNowa = false, strona = 'przod' as 'przod' | 'tyl' } = {}) {
     if (!UBIORY[ubior]) throw new Error(`Ubiór: ${Object.keys(UBIORY).join(', ')}.`);
     if (!KOLORY[kolor]) throw new Error(`Kolor: ${Object.keys(KOLORY).join(', ')}.`);
-    const id = `makieta-${ubior}-${kolor}`;
+    const id = `makieta-${ubior}-${kolor}${strona === 'tyl' ? '-tyl' : ''}`;
     const jest = (await wczytajWizualizacje()).find((w) => w.id === id);
     if (jest && !odNowa) return jest;
     const zlec = () => narysuj({
         id, szerokosc: 768, wysokosc: 1024, ziarno: 4242,
-        prompt: `flat lay product photo of a plain ${KOLORY[kolor]} ${UBIORY[ubior].prompt}, front view, perfectly centered, symmetrical, completely blank front with no print, no logo, no text, no graphics, soft even studio lighting, plain light grey background`,
+        prompt: `flat lay product photo of a plain ${KOLORY[kolor]} ${UBIORY[ubior].prompt}, ${strona === 'tyl' ? 'BACK view (seen from behind, back of the garment, no front details' + (ubior === 'bluza' ? ', hood lying flat at the top' : '') + ')' : 'front view'}, perfectly centered, symmetrical, sleeves spread out, completely blank with no print, no logo, no text, no graphics, soft even studio lighting, plain light grey background`,
     });
     // ComfyUI budzony przez most odpowiada „właśnie wstaje” — czekamy do ~3 min, zamiast odbijać Suwerena.
     for (let proba = 0; ; proba++) {
@@ -81,12 +81,12 @@ export async function makieta(ubior: string, kolor: string, { odNowa = false } =
     }
 }
 
-async function pobierz(url: string, cel: string) {
+export async function pobierz(url: string, cel: string) {
     const r = await fetch(`${MOST}${url}`, { signal: AbortSignal.timeout(60000) });
     if (!r.ok) throw new Error(`Nie pobrałem ${url} z Katedry: HTTP ${r.status}`);
     await fs.writeFile(cel, Buffer.from(await r.arrayBuffer()));
 }
-async function wymiary(plik: string): Promise<[number, number] | null> {
+export async function wymiary(plik: string): Promise<[number, number] | null> {
     const { stderr } = await uruchom(FFMPEG, ['-i', plik, '-f', 'null', '-'], { maxBuffer: 8 * 1024 * 1024 }).catch((e) => ({ stderr: e.stderr ?? '' }));
     const m = String(stderr).match(/,\s*(\d{2,5})x(\d{2,5})[\s,]/);
     return m ? [Number(m[1]), Number(m[2])] : null;

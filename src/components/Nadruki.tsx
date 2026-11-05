@@ -6,6 +6,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Shirt, Loader2, Trash2, Download, AlertTriangle } from 'lucide-react';
+import { Kolekcja360 } from './Kolekcja360';
 
 const MOST = 'http://127.0.0.1:3001';
 interface Motyw { id: string; opis: string; galaz: string | null; plik: string }
@@ -89,6 +90,8 @@ export function Nadruki() {
                     {zajety ? <><Loader2 className="mr-1 inline h-4 w-4 animate-spin" />nadrukowuję… (pierwsza makieta do 7 min)</> : '👕 Nadrukuj'}
                 </button>
             </div>
+
+            <Kolekcja360 motyw={motywy.find((m) => m.id === wybrany) ?? null} ubiory={ubiory} kolory={kolory} />
 
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
                 {nadruki.map((n) => (
