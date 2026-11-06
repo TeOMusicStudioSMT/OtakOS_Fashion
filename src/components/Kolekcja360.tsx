@@ -174,6 +174,34 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
     setPraca(''); setInfo(`Przeszyte ${ostatniaNaModel.length - zle.length}/${ostatniaNaModel.length}.`);
     if (zle.length) setBlad(zle.join(' · '));
   };
+  /** 🔁 Kolekcje, których tytuł to samo imię postaci albo powtarza tytuł STARSZEGO modelu — dostają nową opowieść (inne = pozostałe). */
+  const normT = (s: string) => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  const powtorki = (() => {
+    const widziane = new Set<string>(), zle: Kolekcja[] = [];
+    for (const k of [...ostatniaNaModel].sort((a, b) => String(a.kiedy).localeCompare(String(b.kiedy)))) {
+      const t = normT(k.tekst?.tytul ?? '');
+      if (!t || t === normT(imie) || widziane.has(t)) zle.push(k); else widziane.add(t);
+    }
+    return zle;
+  })();
+  const poprawPowtorki = async () => {
+    if (!motyw) return;
+    setBlad(''); setInfo('');
+    const zle: string[] = [];
+    const inne = ostatniaNaModel.filter((k) => !powtorki.includes(k)).map((k) => `${k.tekst.tytul}${k.tekst.podtytul ? ` — ${k.tekst.podtytul}` : ''}`);
+    for (const [i, k] of powtorki.entries()) {
+      const nazwa = ubiory[k.ubior]?.nazwa ?? k.ubior, przed = `🔁 ${i + 1}/${powtorki.length} ${nazwa} · `;
+      try {
+        setPraca(`${przed}Kronikarz pisze nową opowieść…`);
+        const d = await api<{ tekst: TekstKolekcji }>('/api/nadruki/opowiesc', { method: 'POST', body: JSON.stringify({ obraz: motyw.id, jezyk, wzor: nazwa, inne }) });
+        const t = { ...d.tekst, blok: k.tekst.blok ?? tekst.blok, sentencja: k.tekst.sentencja ?? tekst.sentencja };
+        inne.push(`${t.tytul}${t.podtytul ? ` — ${t.podtytul}` : ''}`);
+        await uszyjZ({ ubior: k.ubior, styl: k.styl ?? (KURTKI.includes(k.ubior) ? 'haft' : 'plaski'), uklad: k.uklad, tekst: t }, przed);
+      } catch (e) { zle.push(`${nazwa}: ${(e as Error).message}`); }
+    }
+    setPraca(''); setInfo(`Nowe opowieści: ${powtorki.length - zle.length}/${powtorki.length}.`);
+    if (zle.length) setBlad(zle.join(' · '));
+  };
   const zrobPakiet = async () => {
     setBlad(''); setPakiet(null); setPraca('Składam pakiet Shopify…');
     try {
@@ -237,6 +265,9 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
         </button>
         {ostatniaNaModel.length > 0 && <button onClick={() => void przeszyjWszystkie()} disabled={!!praca || !wyciety} title="Te same opowieści, nowy napis blokowy i sentencja z formularza" className="ml-3 rounded-lg border px-4 py-2 text-sm disabled:opacity-40" style={{ borderColor: themeConfig.borderHex }}>
           ↻ Przeszyj {ostatniaNaModel.length} — napisy w języku: {jezyk}
+        </button>}
+        {powtorki.length > 0 && <button onClick={() => void poprawPowtorki()} disabled={!!praca || !wyciety} title={powtorki.map((k) => `${ubiory[k.ubior]?.nazwa ?? k.ubior}: „${k.tekst.tytul}”`).join(' · ')} className="ml-3 rounded-lg border px-4 py-2 text-sm disabled:opacity-40" style={{ borderColor: themeConfig.borderHex }}>
+          🔁 Nowe opowieści dla {powtorki.length} (tytuł = imię albo powtórka)
         </button>}
         {ostatniaNaModel.length > 0 && <div className="space-y-2 rounded border p-3 text-xs" style={{ borderColor: themeConfig.borderHex }}>
           <b>🛍️ Pakiet do Shopify — {imieSklepu} ({ostatniaNaModel.length} produktów: najnowsza kolekcja każdego modelu; produkty wchodzą jako SZKICE)</b>

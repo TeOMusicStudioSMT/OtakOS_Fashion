@@ -258,11 +258,14 @@ export async function opowiesc(obraz: string, jezyk = 'pl', { wzor = '', inne = 
     const system = `Jesteś Kronikarzem Teterhii — piszesz LORE na streetwearowe ubranie z Katedry OtakOS. Język WSZYSTKICH pól: ${nazwaJezyka(jezyk)}.
 Zwięźle, baśniowo albo mrocznie, z obrazem w słowach; bez cudzych chronionych postaci i bez nazw marek.${serial.length ? `
 Postać ma swoją HISTORIĘ Z SERIALU (fakty niżej) — opowieść ma do niej nawiązywać, nie wymyślaj innej biografii.` : ''}${inne.length ? `
-Ta postać ma już opowieści na innych modelach: ${inne.join(' | ')} — napisz INNĄ, o innym wątku z historii.` : ''}
-Odpowiedz WYŁĄCZNIE JSON-em: {"tytul":"≤ 3 słowa, IMIĘ albo przydomek","podtytul":"≤ 6 słów","zywiol":"jedno słowo","opowiesc":"2–3 zdania, łącznie ≤ 320 znaków","cytat":"krótka maksyma ≤ 12 słów"}`;
+Ta postać ma już opowieści na innych modelach: ${inne.join(' | ')} — napisz INNĄ, o innym wątku z historii, z INNYM tytułem.` : ''}
+Odpowiedz WYŁĄCZNIE JSON-em: {"tytul":"≤ 3 słowa: przydomek albo nazwa wątku — NIE samo imię postaci","podtytul":"≤ 6 słów","zywiol":"jedno słowo","opowiesc":"2–3 zdania, łącznie ≤ 320 znaków","cytat":"krótka maksyma ≤ 12 słów"}`;
     const prompt = [`MOTYW (opis z Pracowni): ${motyw.opis}`, wzor && `MODEL UBRANIA: ${wzor}`,
         serial.length && `HISTORIA Z SERIALU TeOgochi Mini:\n${serial.map((o) => `[${o.tytul}] ${o.kwestie.join(' ')}`).join('\n')}`].filter(Boolean).join('\n\n');
-    const tekst = await krawiecJson(system, prompt, 0.9, (w) => !!(w.tytul && w.opowiesc));
+    // tytuł = nazwa opowieści w sklepie: nie samo imię i nie tytuł z innego modelu (pakiet Shopify pomija tytuł równy imieniu)
+    const norm = (s: string) => String(s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+    const zajete = new Set([norm(imie), ...inne.map((x) => norm(String(x).split(' — ')[0]))].filter(Boolean));
+    const tekst = await krawiecJson(system, prompt, 0.9, (w) => !!(w.tytul && w.opowiesc) && !zajete.has(norm(w.tytul)));
     return { ...tekst, edycja: `ARCHIVE // 0.00G · Nº ${parseInt(crypto.createHash('sha1').update(obraz).digest('hex').slice(0, 4), 16) % 900 + 100}` };   // stały numer motywu
 }
 
