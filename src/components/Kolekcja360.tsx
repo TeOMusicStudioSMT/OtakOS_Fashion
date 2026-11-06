@@ -11,8 +11,8 @@ import { wczytajMotyw, wytnijTlo, paleta, imieZOpisu, przodPlakat, przodHerb, pl
 const DLUGIE_REKAWY = ['bluza', 'longsleeve', 'kurtka', 'bomber', 'jeansowa', 'ramoneska', 'parka', 'plaszcz'];
 /** Kurtki szyje się naszywkami (chenille), resztę nadrukiem. */
 const KURTKI = ['kurtka', 'bomber', 'jeansowa', 'ramoneska'];
-/** 💰 Cennik 0.00G Style (Suweren 2026-11-06, EUR) — domyślny, do zmiany w panelu. Bomber i jeansowa: bez ceny Suwerena. */
-const CENNIK_0G: Record<string, string> = { torba: '29', koszulka: '39', longsleeve: '49', bluza: '69', parka: '89', plaszcz: '89', kurtka: '119', ramoneska: '119' };
+/** 💰 Cennik 0.00G Style (Suweren 2026-11-06, EUR) — domyślny, do zmiany w panelu. Bomber 99, jeansowa 109 (Suweren 2026-11-06). */
+const CENNIK_0G: Record<string, string> = { torba: '29', koszulka: '39', longsleeve: '49', bluza: '69', parka: '89', plaszcz: '89', bomber: '99', jeansowa: '109', kurtka: '119', ramoneska: '119' };
 const SKLEP_0G = 'https://teo.center';
 
 interface Motyw { id: string; opis: string; galaz: string | null }
