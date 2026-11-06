@@ -68,15 +68,19 @@ function pozycjeHaftu(ubior: string): { przod: Record<string, Pozycja>; tyl: Rec
         przod: { 'przod-l': kroj.piersL, 'przod-p': kroj.piersP, ...rekawP, ...rekawL },
         tyl: { tyl: kroj.tyl, 'tyl-dol': kroj.tylDol, ...tylR },
     };
+    // Ramoneska (Suweren 2026-11-06): klapy do y ≈ 0,43, skośny zamek przez lewą pierś noszącego — naszywki POD klapami, obok zamka.
+    const piersi = ubior === 'ramoneska' ? { 'przod-l': { x: 0.67, y: 0.49, w: 0.13 }, 'przod-p': { x: 0.335, y: 0.475, w: 0.18 } }
+        : { 'przod-l': { x: 0.64, y: 0.34, w: 0.17 }, 'przod-p': { x: 0.36, y: 0.35, w: 0.22 } };
     return {
-        przod: { 'przod-l': { x: 0.64, y: 0.34, w: 0.17 }, 'przod-p': { x: 0.36, y: 0.35, w: 0.22 }, ...rekawP, ...rekawL },
+        przod: { ...piersi, ...rekawP, ...rekawL },
         tyl: { tyl: { x: 0.5, y: ubior === 'bluza' ? 0.5 : 0.44, w: 0.54 }, 'tyl-dol': { x: 0.5, y: 0.7, w: 0.5 }, ...tylR },
     };
 }
 export function pozycje(ubior: string, uklad: string, styl = 'plaski'): { przod: Record<string, Pozycja>; tyl: Record<string, Pozycja> } {
     if (styl === 'haft') return pozycjeHaftu(ubior);
     const rekawy = ubior === 'koszulka' ? KROTKI_REKAW : ubior === 'torba' ? null : DLUGI_REKAW;
-    const piers = uklad === 'herb' ? { x: 0.63, y: 0.33, w: 0.12 } : { x: 0.5, y: ubior === 'torba' ? 0.58 : 0.45, w: ubior === 'torba' ? 0.42 : 0.34 };
+    // herb na sercu; bluza: kaptur zabiera górę kadru, serce niżej (Suweren 2026-11-06)
+    const piers = uklad === 'herb' ? { x: 0.63, y: ubior === 'bluza' ? 0.46 : 0.33, w: 0.12 } : { x: 0.5, y: ubior === 'torba' ? 0.58 : 0.45, w: ubior === 'torba' ? 0.42 : 0.34 };
     const plecy = { x: 0.5, y: ubior === 'bluza' ? 0.53 : ubior === 'torba' ? 0.58 : 0.47, w: ubior === 'torba' ? 0.42 : 0.4 };
     // z tyłu rękawy zamieniają się stronami kadru (patrzymy na plecy)
     const zTylu = rekawy ? { 'rekaw-l': { ...rekawy['rekaw-p'] }, 'rekaw-p': { ...rekawy['rekaw-l'] } } : {};
