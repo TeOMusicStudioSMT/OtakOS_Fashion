@@ -16,7 +16,8 @@ const CENNIK_0G: Record<string, string> = { torba: '29', koszulka: '39', longsle
 const SKLEP_0G = 'https://teo.center';
 
 interface Motyw { id: string; opis: string; galaz: string | null }
-interface Kolekcja { id: string; obraz: string; ubior: string; kolor: string; uklad: string; tekst: TekstKolekcji; styl?: string; strefy: Record<string, string>; makietaPrzod?: string; makietaTyl?: string; arkusz?: string; stan: string; kiedy: string }
+interface Kolekcja { id: string; obraz: string; ubior: string; kolor: string; uklad: string; tekst: TekstKolekcji; styl?: string; strefy: Record<string, string>; makietaPrzod?: string; makietaTyl?: string; arkusz?: string; stan: string; kiedy: string;
+  qc?: { poprawki: { strefa: string; zmiana: string; uwaga?: string }[]; nieMieszcza: string[]; wymiary?: Record<string, { w: number; h: number }> } }
 
 async function api<T>(adres: string, init?: RequestInit): Promise<T> {
   const r = await fetch(adres, { ...init, headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) } });
@@ -287,6 +288,9 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
             <div className="mb-2 flex items-center gap-3"><b>{k.tekst.tytul || k.obraz}</b><span className="opacity-60">{ubiory[k.ubior]?.nazwa ?? k.ubior} · {k.kolor} · {k.uklad}</span>
               <button onClick={() => void usun(k.id)} className="ml-auto opacity-60"><Trash2 className="h-3 w-3" /></button></div>
             <div className="grid grid-cols-2 gap-2">{k.makietaPrzod && <img src={k.makietaPrzod} alt="przód" className="rounded" />}{k.makietaTyl && <img src={k.makietaTyl} alt="tył" className="rounded" />}</div>
+            {k.qc && <div className="mt-1 text-[11px] opacity-70" title={[...k.qc.poprawki.map((q) => `${q.strefa}: ${q.zmiana}${q.uwaga ? ` (${q.uwaga})` : ''}`), ...Object.entries(k.qc.wymiary ?? {}).map(([s, v]: [string, { w: number; h: number }]) => `${s}: ${v.w} × ${v.h} cm`)].join(String.fromCharCode(10))}>
+              🧵 QC szwalni: {k.qc.nieMieszcza.length ? `⚠ nie mieści się: ${k.qc.nieMieszcza.join(', ')}` : k.qc.poprawki.length ? `✓ poprawiono ${k.qc.poprawki.length} stref — wszystko na materiale` : '✓ wszystko na materiale'}
+            </div>}
             <div className="mt-2 flex flex-wrap gap-3">
               {Object.entries(k.strefy).map(([s, u]) => <a key={s} href={u} download className="flex items-center gap-1 underline"><Download className="h-3 w-3" />{s}</a>)}
               {k.arkusz && <a href={k.arkusz} download className="flex items-center gap-1 underline"><Download className="h-3 w-3" />arkusz produkcyjny</a>}

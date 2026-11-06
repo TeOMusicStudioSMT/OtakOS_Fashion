@@ -260,7 +260,18 @@ app.post('/api/nadruki/kolekcje/:id/strefa/:strefa', express.raw({ type: 'image/
   catch (err: any) { res.status(422).json({ error: String(err?.message ?? err) }); }
 });
 app.post('/api/nadruki/kolekcje/:id/zloz', async (req, res) => {
-  try { res.json({ kolekcja: await Kolekcje.zloz(req.params.id) }); }
+  try {
+    const kolekcja = await Kolekcje.zloz(req.params.id);
+    // 🧵 QC szwalni poprawiła naszywki → Krawcowa melduje kanałem Mistrza (Orbita); most śpi = bez meldunku
+    const qc = kolekcja.qc;
+    if (qc?.poprawki.length) {
+      const imie = (/[„"]([^"”]{2,30})[”"]/.exec(kolekcja.opisMotywu)?.[1] ?? '').trim();
+      const nazwa = (Kolekcje.UBIORY_EN as Record<string, string>)[kolekcja.ubior] ?? kolekcja.ubior;
+      const tresc = `🧵 QC szwalni: ${imie || 'kolekcja'} · ${nazwa} — poprawione strefy: ${qc.poprawki.length - qc.nieMieszcza.length} (nic poza materiałem)${qc.nieMieszcza.length ? `; nie mieszczą się: ${qc.nieMieszcza.join(', ')}` : ''}.`;
+      fetch(`${process.env.OTAKOS_MOST || 'http://127.0.0.1:3001'}/api/mistrz/wiesc`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tresc, skad: 'Krawcowa · QC szwalni' }), signal: AbortSignal.timeout(5000) }).catch(() => {});
+    }
+    res.json({ kolekcja });
+  }
   catch (err: any) { res.status(422).json({ error: String(err?.message ?? err) }); }
 });
 app.delete('/api/nadruki/kolekcje/:id', async (req, res) => {

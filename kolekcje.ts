@@ -18,6 +18,7 @@ import { promisify } from 'util';
 import { FFMPEG } from './marki';
 import { UBIORY, KOLORY, DLUGIE_REKAWY, makieta, motywy, pobierz, wymiary } from './nadruki';
 import { stanKrawca } from './krawiec-lokalny';
+import { kontrolaStrony, pngZDpi, type WynikQc } from './kontrolaSzwalni';
 
 const uruchom = promisify(execFile);
 const OLLAMA = process.env.OTAKOS_OLLAMA || 'http://127.0.0.1:11434';
@@ -87,6 +88,8 @@ export interface Kolekcja {
     tekst: { tytul?: string; podtytul?: string; zywiol?: string; opowiesc?: string; cytat?: string; edycja?: string; blok?: string; sentencja?: string };
     strefy: Partial<Record<Strefa, string>>; makietaPrzod?: string; makietaTyl?: string; arkusz?: string;
     stan: 'szkic' | 'gotowa'; kiedy: string; psnr?: Record<string, string | null>;
+    /** 🧵 QC szwalni przy ostatnim złożeniu: strefy przesunięte/zmniejszone, by nie wystawały poza materiał. */
+    qc?: { kiedy: string; poprawki: WynikQc[]; nieMieszcza: string[]; wymiary?: Record<string, { w: number; h: number; kadr?: { x0: number; y0: number; x1: number; y1: number } }> };
 }
 const dir = (id: string) => path.join(KAT, id);
 const url = (id: string, plik: string) => `/nadruki/kolekcje/${id}/${plik}`;
@@ -175,9 +178,15 @@ export async function zloz(id: string): Promise<Kolekcja> {
     const ma = async (s: string) => fs.access(plik(s)).then(() => true, () => false);
     if (!((await ma('przod')) || (await ma('przod-l'))) || !(await ma('tyl'))) throw new Error('Najpierw wgraj strefy przodu i pleców.');
     k.psnr = {};
+    const poprawki: WynikQc[] = [], wymiary: NonNullable<NonNullable<Kolekcja['qc']>['wymiary']> = {};
     for (const strona of ['przod', 'tyl'] as const) {
-        const warstwy = [];
-        for (const [s, p] of Object.entries(poz[strona])) if (await ma(s)) warstwy.push({ plik: plik(s), poz: p });
+        let warstwy: { strefa: string; plik: string; poz: Pozycja }[] = [];
+        for (const [s, p] of Object.entries(poz[strona])) if (await ma(s)) warstwy.push({ strefa: s, plik: plik(s), poz: p });
+        // 🧵 QC szwalni: nic poza materiałem, rękaw ≤ 60%, plecy w korpusie, torba bez uchwytów
+        const qc = await kontrolaStrony(path.join(dir(id), `makieta-${strona}.png`), k.ubior, warstwy);
+        warstwy = warstwy.map((w, i) => ({ ...w, poz: qc[i].po }));
+        for (const q of qc) if (q.cm && !wymiary[q.strefa]) wymiary[q.strefa] = { ...q.cm, kadr: q.kadr };
+        poprawki.push(...qc.filter((q) => q.zmiana !== 'bez').map((q) => ({ ...q, strefa: `${strona}:${q.strefa}` })));
         const cel = path.join(dir(id), `podglad-${strona}.png`);
         const psnr = await naloz(path.join(dir(id), `makieta-${strona}.png`), warstwy, cel);
         if (psnr && (psnr.toLowerCase() === 'inf' || Number(psnr) > 40)) throw new Error(`Nadruku na ${strona === 'przod' ? 'przodzie' : 'plecach'} nie widać (PSNR ${psnr} dB) — sprawdź strefę.`);
@@ -191,6 +200,7 @@ export async function zloz(id: string): Promise<Kolekcja> {
     const skal = obecne.map((_, i) => `[${i}:v]format=rgba,scale=-1:1400:flags=lanczos,pad=iw+80:1480:40:40:color=0x1a1a22[a${i}]`).join(';');
     await uruchom(FFMPEG, ['-y', ...wej, '-filter_complex', `${skal};${obecne.map((_, i) => `[a${i}]`).join('')}hstack=inputs=${obecne.length}[w]`, '-map', '[w]', '-frames:v', '1', path.join(dir(id), 'arkusz.png')], { maxBuffer: 32 * 1024 * 1024 });
     k.arkusz = url(id, 'arkusz.png');
+    k.qc = { kiedy: new Date().toISOString(), poprawki, wymiary, nieMieszcza: poprawki.filter((q) => q.zmiana === 'nie-miesci').map((q) => q.strefa) };
     k.stan = 'gotowa';
     await zapisz(k);
     return k;
@@ -281,7 +291,7 @@ export async function ustawTekst(id: string, tekst: any) { const k = await czyta
  */
 const ROZMIARY = ['S', 'M', 'L', 'XL', 'XXL'];
 /** Nazwy produktów w sklepie — wydanie globalne po angielsku (Suweren 2026-11-06). */
-const UBIORY_EN: Record<string, string> = { koszulka: 'T-Shirt', bluza: 'Hoodie', longsleeve: 'Longsleeve', torba: 'Tote Bag', bomber: 'Bomber Jacket', jeansowa: 'Denim Jacket', ramoneska: 'Leather Biker Jacket', parka: 'Hooded Parka', plaszcz: 'Trench Coat', kurtka: 'Varsity Jacket' };
+export const UBIORY_EN: Record<string, string> = { koszulka: 'T-Shirt', bluza: 'Hoodie', longsleeve: 'Longsleeve', torba: 'Tote Bag', bomber: 'Bomber Jacket', jeansowa: 'Denim Jacket', ramoneska: 'Leather Biker Jacket', parka: 'Hooded Parka', plaszcz: 'Trench Coat', kurtka: 'Varsity Jacket' };
 const csv = (v: unknown) => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
 const slug = (s: string) => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'kolekcja';
 export async function pakietSklepu({ imie, kolekcje: ids, ceny = {}, waluta = 'EUR', bazaObrazow = '', vendor = '0.00G Style', jezyk = 'en' }: { imie: string; kolekcje: string[]; ceny: Record<string, number>; waluta?: string; bazaObrazow?: string; vendor?: string; jezyk?: string }) {
@@ -306,6 +316,19 @@ export async function pakietSklepu({ imie, kolekcje: ids, ceny = {}, waluta = 'E
         await fs.mkdir(dk, { recursive: true });
         const pliki = ['podglad-przod.png', 'podglad-tyl.png', 'arkusz.png', ...Object.keys(k.strefy).map((s) => `strefa-${s}.png`)];
         for (const p of pliki) await fs.copyFile(path.join(dir(k.id), p), path.join(dk, p)).catch(() => {});
+        // 🧵 pliki DO DRUKU: każda strefa w rozmiarze z QC (cm) przy 300 DPI + znacznik pHYs
+        const druk: string[] = [];
+        for (const s of Object.keys(k.strefy)) {
+            const cm = k.qc?.wymiary?.[s]; if (!cm) continue;
+            const px = Math.max(16, Math.round((cm.w / 2.54) * 300));
+            const cel = path.join(dk, `druk-${s}-${cm.w}x${cm.h}cm-300dpi.png`);
+            await uruchom(FFMPEG, ['-v', 'error', '-y', '-i', path.join(dir(k.id), `strefa-${s}.png`), '-vf', `${cm.kadr ? `crop=iw*${(cm.kadr.x1 - cm.kadr.x0).toFixed(4)}:ih*${(cm.kadr.y1 - cm.kadr.y0).toFixed(4)}:iw*${cm.kadr.x0.toFixed(4)}:ih*${cm.kadr.y0.toFixed(4)},` : ''}scale=${px}:-1:flags=lanczos`, '-pix_fmt', 'rgba', cel], { maxBuffer: 16 * 1024 * 1024 });
+            await fs.writeFile(cel, pngZDpi(await fs.readFile(cel), 300));
+            druk.push(`  ${s}: ${cm.w} × ${cm.h} cm (${px} px, 300 DPI)`);
+        }
+        if (druk.length) await fs.writeFile(path.join(dk, 'WYMIARY-DRUKU.txt'), [`${u} — strefy do druku (QC szwalni ${k.qc?.kiedy?.slice(0, 10) ?? ''}):`, ...druk, '',
+            'Wymiary liczone z makiety względem typowej długości ubrania w rozmiarze M (torba: szerokości korpusu) — PRZYBLIŻENIE.',
+            'Wiążący jest szablon drukarni: w kreatorze ustaw naszywkę na podany rozmiar i sprawdź, czy mieści się w polu druku tego produktu.'].join('\n'), 'utf8');
         const t = k.tekst;
         const opis = `<p><strong>${t.tytul || nazwa}</strong>${t.podtytul ? ` — ${t.podtytul}` : ''}</p>${t.opowiesc ? `<p>${t.opowiesc}</p>` : ''}${t.cytat ? `<p><em>${en ? '“' : '„'}${t.cytat}”</em></p>` : ''}<p>${en ? `${u} · ${k.styl === 'haft' ? 'chenille embroidered patches' : 'printed'}. 0.00G Style · ${nazwa} from the TeOgochi Mini series.` : `${u} · ${k.kolor} · ${k.styl === 'haft' ? 'naszywki haftowane' : 'nadruk'}. 0.00G Style · postać ${nazwa} z serialu TeOgochi Mini.`}</p>`;
         const tytul = `${nazwa} — ${t.tytul && t.tytul !== nazwa ? `${t.tytul} · ` : ''}${u}`;
@@ -321,7 +344,7 @@ export async function pakietSklepu({ imie, kolekcje: ids, ceny = {}, waluta = 'E
         `Pakiet kolekcji „${nazwa}” — ${lista.length} produktów, ceny w ${waluta}.`,
         'Shopify → Produkty → Importuj → produkty.csv. Każdy produkt wchodzi jako SZKIC (draft) — sprawdzasz i publikujesz sam.',
         baza ? `Zdjęcia w CSV wskazują na ${baza}/… — muszą tam być publicznie, zanim zaimportujesz.` : 'Zdjęć w CSV nie ma (brak publicznego adresu) — dodaj podglad-przod.png i podglad-tyl.png z katalogu produktu w panelu Shopify.',
-        'Pliki strefa-*.png (4096 px, przezroczyste) idą do drukarni POD (Printful, Gelato…) przy konfiguracji produktu; arkusz.png = podgląd wszystkich stref.',
+        'Pliki druk-<strefa>-<szer>x<wys>cm-300dpi.png = strefa w rozmiarze z kontroli szwalni, 300 DPI (WYMIARY-DRUKU.txt w katalogu produktu). strefa-*.png = oryginał 4096 px; arkusz.png = podgląd wszystkich stref.',
         'Makiety to rysunek FLUX, nie zdjęcie produktu drukarni — na stronie sklepu lepiej podmienić je na makiety z kreatora drukarni.',
         `Walutę sklepu ustawiasz w Shopify (CSV podaje same liczby — tu ${waluta}).`,
     ].join('\n'), 'utf8');
