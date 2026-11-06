@@ -58,3 +58,16 @@ test('kadr grafiki i PNG z pHYs 300 DPI', () => {
     const z = pngZDpi(png, 300), i = z.indexOf('pHYs');
     assert.ok(i > 0); assert.equal(z.readUInt32BE(i + 4), 11811); assert.equal(z[i + 12], 1);
 });
+
+test('rękaw: dwie naszywki w tym samym miejscu — druga omija pierwszą z odstępem', async () => {
+    const { zajmij, ODSTEP } = await import('../kontrolaSzwalni.ts');
+    const m = maskaUbioru(kurtka()), o = pelny();
+    const zajete = new Uint8Array(200 * 200);
+    const p = { x: 0.225, y: 0.45, w: 0.06 };
+    zajmij(zajete, 200, 200, o, p, 1, Math.round(ODSTEP * 200));
+    const baza = obszarStrefy(m, 'kurtka', 'rekaw-p-2', true), obszar = { ...baza, m: baza.m.map((v, j) => (zajete[j] ? 0 : v)) };
+    const q = dopasuj(obszar, m, o, 1, 'rekaw-p-2', p);
+    assert.notEqual(q.zmiana, 'nie-miesci');
+    const odstepPion = Math.abs(q.po.y - p.y) * 200 - (q.po.w * 200 + p.w * 200) / 2;
+    assert.ok(odstepPion >= 2 || Math.abs(q.po.x - p.x) * 200 >= (q.po.w + p.w) * 100, `nachodzą: ${JSON.stringify(q.po)}`);
+});

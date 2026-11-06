@@ -259,15 +259,33 @@ export function dopasuj(dozw: Maska, _maska: Maska, o: Odcisk, proporcja: number
     return { strefa, przed: p, po: p, poza: zle0, zmiana: 'nie-miesci', uwaga: 'nie ma miejsca na materiale nawet przy 34% wielkości' };
 }
 
+export const ODSTEP = 0.012;   // odstęp między naszywkami rękawa (ułamek szerokości kadru)
+/** Zaznacz odcisk naszywki (z odstępem) jako zajęty — ułożony tak samo jak w `poza`. */
+export function zajmij(zajete: Uint8Array, W: number, H: number, o: Odcisk, p: Pozycja, proporcja: number, odstep: number) {
+    const sz = p.w * W, wy = sz * proporcja, kat = ((p.rot ?? 0) * Math.PI) / 180, c = Math.cos(kat), s = Math.sin(kat);
+    const r = odstep + Math.ceil(Math.max(sz / o.w, wy / o.h) / 2);
+    for (let v = 0; v < o.h; v++) for (let u = 0; u < o.w; u++) {
+        if (!o.a[v * o.w + u]) continue;
+        const lx = ((u + 0.5) / o.w - 0.5) * sz, ly = ((v + 0.5) / o.h - 0.5) * wy;
+        const X = Math.round(p.x * W + lx * c - ly * s), Y = Math.round(p.y * H + lx * s + ly * c);
+        for (let y = Math.max(0, Y - r); y <= Math.min(H - 1, Y + r); y++) for (let x = Math.max(0, X - r); x <= Math.min(W - 1, X + r); x++) zajete[y * W + x] = 1;
+    }
+}
+
 /** QC całej strony makiety: maska raz, każda strefa dopasowana. */
 export async function kontrolaStrony(makieta: string, ubior: string, warstwy: { strefa: string; plik: string; poz: Pozycja }[]): Promise<WynikQc[]> {
     const maska = maskaUbioru(await czytajObraz(makieta, 384));
     const rm = ramka(maska), { bx0, bx1 } = korpus(maska, ubior);
     const cmNaPx = ubior === 'torba' ? MIARA_CM.torba / Math.max(1, bx1 - bx0) : (MIARA_CM[ubior] ?? 68) / Math.max(1, rm.y1 - rm.y0);
     const wyniki: WynikQc[] = [];
+    // naszywki rękawów nie mogą na siebie nachodzić: każda postawiona zajmuje swój odcisk + ODSTEP (kolejne omijają)
+    const zajete = new Uint8Array(maska.w * maska.h);
     for (const w of warstwy) {
-        const o = await czytajObraz(w.plik, 48, true);
-        const q = dopasuj(obszarStrefy(maska, ubior, w.strefa, w.strefa.startsWith('rekaw') ? w.poz.x < 0.5 : null), maska, odcisk(o), o.h / o.w, w.strefa, w.poz);
+        const o = await czytajObraz(w.plik, 48, true), od = odcisk(o), rekaw = w.strefa.startsWith('rekaw');
+        let obszar = obszarStrefy(maska, ubior, w.strefa, rekaw ? w.poz.x < 0.5 : null);
+        if (rekaw) obszar = { ...obszar, m: obszar.m.map((v, j) => (zajete[j] ? 0 : v)) };
+        const q = dopasuj(obszar, maska, od, o.h / o.w, w.strefa, w.poz);
+        if (rekaw) zajmij(zajete, maska.w, maska.h, od, q.po, o.h / o.w, Math.max(2, Math.round(ODSTEP * maska.w)));
         const kadr = kadrGrafiki(await czytajObraz(w.plik, 512, true));
         const ramkaCm = q.po.w * maska.w * cmNaPx;   // szerokość CAŁEGO pliku strefy na ubraniu
         const szer = ramkaCm * (kadr.x1 - kadr.x0), wys = ramkaCm * (o.h / o.w) * (kadr.y1 - kadr.y0);
