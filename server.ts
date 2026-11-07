@@ -238,8 +238,31 @@ app.put('/api/nadruki/link-sklepu', async (req, res) => {
     res.json(d);
   } catch (err: any) { res.status(502).json({ error: `Most Katedry nie odpowiada: ${err?.message ?? err}` }); }
 });
+// 🔄 Żywa paczka sklepu: po uszyciu / przeszyciu / usunięciu kolekcji paczki postaci budują się od nowa (z opóźnieniem 5 s —
+// seria szycia to jedno odświeżenie), a most Katedry (Stół Produktowy) dostaje sygnał i przepisuje _OtakOs_Wymiar/sklep-shopify.
+let czasOdswiezenia: ReturnType<typeof setTimeout> | null = null;
+let ostatnieOdswiezenie: unknown = null;
+function zaplanujOdswiezenieSklepu() {
+  if (czasOdswiezenia) clearTimeout(czasOdswiezenia);
+  czasOdswiezenia = setTimeout(() => {
+    czasOdswiezenia = null;
+    Kolekcje.odswiezSklep().then((w) => {
+      ostatnieOdswiezenie = w;
+      return fetch(`${process.env.OTAKOS_MOST || 'http://127.0.0.1:3001'}/api/stol-produktowy/synchronizuj`, { method: 'POST', signal: AbortSignal.timeout(60000) });
+    }).catch((e) => { ostatnieOdswiezenie = { blad: String(e?.message ?? e) }; });
+  }, 5000);
+}
+app.post('/api/nadruki/sklep/odswiez', async (_req, res) => {
+  try { const w = await Kolekcje.odswiezSklep(); ostatnieOdswiezenie = w; res.json(w); }
+  catch (err: any) { res.status(422).json({ error: String(err?.message ?? err) }); }
+});
+app.get('/api/nadruki/sklep/stan', async (_req, res) => {
+  const lista = await Kolekcje.lista();
+  res.json({ postacie: Kolekcje.zywePostacie(lista).map((p) => ({ imie: p.imie, katalog: p.katalog, aktualne: p.aktualne.map((k) => ({ id: k.id, ubior: k.ubior, kolor: k.kolor, tytul: k.tekst?.tytul })), starsze: p.starsze.map((k) => ({ id: k.id, ubior: k.ubior, tytul: k.tekst?.tytul })) })),
+    ceny: await Kolekcje.cenySklepu(), ostatnieOdswiezenie });
+});
 app.post('/api/nadruki/pakiet-sklepu', async (req, res) => {
-  try { res.json(await Kolekcje.pakietSklepu(req.body ?? {})); }
+  try { if (req.body?.ceny) await Kolekcje.zapiszCeny(req.body.ceny); res.json(await Kolekcje.pakietSklepu(req.body ?? {})); }
   catch (err: any) { res.status(422).json({ error: String(err?.message ?? err) }); }
 });
 app.post('/api/nadruki/przetlumacz', async (req, res) => {
@@ -270,12 +293,13 @@ app.post('/api/nadruki/kolekcje/:id/zloz', async (req, res) => {
       const tresc = `🧵 QC szwalni: ${imie || 'kolekcja'} · ${nazwa} — poprawione strefy: ${qc.poprawki.length - qc.nieMieszcza.length} (nic poza materiałem)${qc.nieMieszcza.length ? `; nie mieszczą się: ${qc.nieMieszcza.join(', ')}` : ''}.`;
       fetch(`${process.env.OTAKOS_MOST || 'http://127.0.0.1:3001'}/api/mistrz/wiesc`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tresc, skad: 'Krawcowa · QC szwalni' }), signal: AbortSignal.timeout(5000) }).catch(() => {});
     }
+    zaplanujOdswiezenieSklepu();
     res.json({ kolekcja });
   }
   catch (err: any) { res.status(422).json({ error: String(err?.message ?? err) }); }
 });
 app.delete('/api/nadruki/kolekcje/:id', async (req, res) => {
-  try { res.json(await Kolekcje.usun(req.params.id)); }
+  try { const w = await Kolekcje.usun(req.params.id); zaplanujOdswiezenieSklepu(); res.json(w); }
   catch (err: any) { res.status(404).json({ error: String(err?.message ?? err) }); }
 });
 app.delete('/api/nadruki/:id', async (req, res) => {

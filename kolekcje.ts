@@ -11,6 +11,7 @@
  *    makieta pokazuje ideę; drukarnia dostaje osobne pliki stref. Motyw z Pracowni ma 1024 px (plik druku = powiększenie).
  */
 import fs from 'fs/promises';
+import fsSync from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { execFile } from 'child_process';
@@ -356,3 +357,61 @@ export async function pakietSklepu({ imie, kolekcje: ids, ceny = {}, waluta = 'E
 }
 
 export async function usun(id: string) { await czytaj(id); await fs.rm(dir(id), { recursive: true, force: true }); return { usunieta: id }; }
+
+/**
+ * 🔄 Żywa paczka sklepu (2026-11-07: „w shopify-import.csv znalazły się produkty, które usunąłem, a nie ma nowych — Bead”).
+ * Dawniej `public/nadruki/sklep/<postać>/` powstawał tylko na kliknięcie „📦 Złóż pakiet” i żył dalej po usunięciu kolekcji.
+ * Teraz źródłem są ŻYWE kolekcje: stan „gotowa”, a z kilku wersji tego samego fasonu i koloru postaci — najnowsza
+ * (ponowne „Uszyj/Przeszyj” robi nową kolekcję, starsza zostaje w pracowni, ale nie idzie do sklepu).
+ * Postać = imię z opisu motywu („Mini-TeOgochi „Borowik”…”). Paczka każdej postaci budowana od nowa, katalog postaci bez
+ * żywych kolekcji usuwany. Ceny: domyślny cennik 0.00G + to, co Suweren zapisał przy pakiecie (`sklep/ceny.json`).
+ */
+export const CENNIK_0G: Record<string, number> = { torba: 29, koszulka: 39, longsleeve: 49, bluza: 69, parka: 89, plaszcz: 89, bomber: 99, jeansowa: 109, kurtka: 119, ramoneska: 119 };
+const SKLEP = path.join(PUBLIC, 'nadruki', 'sklep');
+const PLIK_CEN = path.join(SKLEP, 'ceny.json');
+export const imieKolekcji = (k: Pick<Kolekcja, 'opisMotywu'>) => {
+    const s = (/[„"]([^"”]{2,30})[”"]/.exec(k.opisMotywu)?.[1] ?? String(k.opisMotywu).split(/[:,.]/)[0]).trim().slice(0, 30);
+    return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+};
+/** Żywe kolekcje po postaciach: aktualne (najnowsza na fason+kolor) i starsze wersje (poza sklepem). Czyste. */
+export function zywePostacie(lista: Kolekcja[]) {
+    const out = new Map<string, { imie: string; katalog: string; aktualne: Kolekcja[]; starsze: Kolekcja[] }>();
+    for (const k of [...lista].filter((x) => x.stan === 'gotowa').sort((a, b) => String(b.kiedy).localeCompare(String(a.kiedy)))) {
+        const imie = imieKolekcji(k);
+        if (!imie) continue;
+        const p = out.get(imie) ?? { imie, katalog: slug(imie), aktualne: [], starsze: [] };
+        if (p.aktualne.some((x) => x.ubior === k.ubior && x.kolor === k.kolor)) p.starsze.push(k); else p.aktualne.push(k);
+        out.set(imie, p);
+    }
+    return [...out.values()].sort((a, b) => a.imie.localeCompare(b.imie));
+}
+export async function cenySklepu(): Promise<Record<string, number>> {
+    let z: Record<string, number> = {};
+    try { z = JSON.parse(await fs.readFile(PLIK_CEN, 'utf8')); } catch { /* domyślny cennik */ }
+    return { ...CENNIK_0G, ...Object.fromEntries(Object.entries(z).filter(([u, v]) => UBIORY[u] && Number(v) > 0).map(([u, v]) => [u, Number(v)])) };
+}
+export async function zapiszCeny(ceny: Record<string, unknown>) {
+    const c = Object.fromEntries(Object.entries(ceny ?? {}).filter(([u, v]) => UBIORY[u] && Number(v) > 0).map(([u, v]) => [u, Math.round(Number(v) * 100) / 100]));
+    await fs.mkdir(SKLEP, { recursive: true });
+    await fs.writeFile(PLIK_CEN, JSON.stringify({ ...(await cenySklepu()), ...c }, null, 2), 'utf8');
+}
+let odswiezanie: Promise<unknown> = Promise.resolve();
+export function odswiezSklep({ jezyk = 'en' } = {}) {
+    const p = odswiezanie.then(async () => {
+        const postacie = zywePostacie(await lista());
+        const ceny = await cenySklepu();
+        const zrobione: { imie: string; katalog: string; produktow: number; starszych: number; blad?: string }[] = [];
+        for (const p of postacie) {
+            try { const r = await pakietSklepu({ imie: p.imie, kolekcje: p.aktualne.map((k) => k.id), ceny, jezyk }); zrobione.push({ imie: p.imie, katalog: p.katalog, produktow: r.produktow, starszych: p.starsze.length }); }
+            catch (e) { zrobione.push({ imie: p.imie, katalog: p.katalog, produktow: 0, starszych: p.starsze.length, blad: String((e as Error)?.message ?? e) }); }
+        }
+        const zywe = new Set(postacie.map((p) => p.katalog));
+        const usuniete: string[] = [];
+        for (const d of await fs.readdir(SKLEP, { withFileTypes: true }).catch(() => [])) {
+            if (d.isDirectory() && !zywe.has(d.name) && fsSync.existsSync(path.join(SKLEP, d.name, 'produkty.csv'))) { await fs.rm(path.join(SKLEP, d.name), { recursive: true, force: true }); usuniete.push(d.name); }
+        }
+        return { postacie: zrobione, usuniete, kiedy: new Date().toISOString() };
+    });
+    odswiezanie = p.catch(() => {});
+    return p;
+}
