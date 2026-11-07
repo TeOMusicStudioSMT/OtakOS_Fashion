@@ -169,9 +169,11 @@ export function rysujPlik(r: Rysunek, W: number, H: number, mot: HTMLCanvasEleme
   tloKatedry(g, W, H, ziarno);
   if (r === 'aop-tlo') return c;
   if (r === 'magnes' || r === 'zderzak') {
-    const S = Math.min(H * 0.98, W * 0.45);
-    g.drawImage(medalion(mot, ziarno, Math.round(S)), H * 0.02, (H - S) / 2, S, S);
-    const x0 = S + W * 0.03, sz = W - x0 - W * 0.03, cx = x0 + sz / 2;
+    // margines bezpieczeństwa: Printful przycina brzeg magnesu (2026-11-07 mockup: „0.00G STYLE” ucięte z prawej) — treść ≥ 7 % od krawędzi
+    const M = Math.max(W, H) * 0.07;
+    const S = Math.min(H - M * 1.2, W * 0.4);
+    g.drawImage(medalion(mot, ziarno, Math.round(S)), M, (H - S) / 2, S, S);
+    const x0 = M + S + W * 0.03, sz = W - x0 - M, cx = x0 + sz / 2;
     if (r === 'zderzak') {
       tekstSrodek(g, `0.00G · ${IMIE}`, cx, H * 0.42, `900 ${H * 0.3}px Cinzel, Georgia, serif`, KREM, W * 0.004, sz);
       tekstSrodek(g, 'WEARABLE STORIES', cx, H * 0.74, `600 ${H * 0.14}px Cinzel, Georgia, serif`, ZLOTO, W * 0.006, sz);
