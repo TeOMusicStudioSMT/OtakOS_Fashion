@@ -2,7 +2,8 @@
  * 🛍️🖨️ Bestsellery Printful (Suweren 2026-11-07: „naklejki, plakaty, canvas, magnesy, etui, czapka + 7 produktów All-Over Print”).
  *
  * Tabela produktów z PRAWDZIWEGO katalogu Printful (publiczne `GET https://api.printful.com/products/<id>`, 2026-11-07):
- * numer produktu, miejsca nadruku (`placement`) i numery wariantów. Wymiary plików w px są ORIENTACYJNE
+ * numer produktu, miejsca nadruku (`placement`) i numery wariantów; miejsca i wymiary sprawdzone 2026-11-07 na API z tokenem
+ * (`/mockup-generator/printfiles`). Tabela = zapas: wymiary px są ORIENTACYJNE
  * (`zrodlo: 'orientacyjne'`) — dokładne podaje dopiero `GET /mockup-generator/printfiles/<id>` z tokenem
  * (most → `/api/printful/printfiles/<id>`); generator rysuje każdy plik od nowa w tym rozmiarze.
  *
@@ -42,37 +43,37 @@ export const PRODUKTY_PF: ProduktPF[] = [
     warianty: [{ wartosc: '18″×24″', variantId: 7, cenaEur: 89 }] },
   { klucz: 'magnes', katalogId: 874, nazwaPrintful: 'Car Magnets', nazwa: 'Car Magnet', typ: 'Car Magnets', aop: false, opcja: 'Size',
     uwaga: 'Naklejek na zderzak (Bumper Stickers) nie ma w katalogu Printful 2026-11-07 — format zderzakowy to magnes 10″×3″.',
-    miejsca: [m('default', 'magnes 7.5×4.5″', 2250, 1350, 'magnes')],
+    miejsca: [m('front', 'magnes 7.5×4.5″', 2475, 1575, 'magnes')],
     warianty: [{ wartosc: '7.5″×4.5″', variantId: 22712, cenaEur: 14.9 },
-      { wartosc: '10″×3″', variantId: 22711, cenaEur: 14.9, miejsca: [m('default', 'magnes zderzakowy 10×3″', 3000, 900, 'zderzak')] }] },
+      { wartosc: '10″×3″', variantId: 22711, cenaEur: 14.9, miejsca: [m('front', 'magnes zderzakowy 10×3″', 3000, 900, 'zderzak')] }] },
   { klucz: 'etui-iphone', katalogId: 181, nazwaPrintful: 'Clear Case for iPhone®', nazwa: 'Clear iPhone Case', typ: 'Phone Cases', aop: false, opcja: 'Model',
     uwaga: 'Jeden pionowy plik na wszystkie modele; Printful dopasowuje go do szablonu modelu (dokładne wymiary z tokenem).',
-    miejsca: [m('default', 'plecki etui (pion)', 1200, 2400, 'etui')],
+    miejsca: [m('default', 'plecki etui (pion)', 879, 1830, 'etui')],
     warianty: rozm([['iPhone 15', 17616], ['iPhone 15 Pro', 17618], ['iPhone 16', 20290], ['iPhone 16 Pro', 20292], ['iPhone 17', 33993], ['iPhone 17 Pro', 33995]], () => 29) },
   { klucz: 'czapka-trucker', katalogId: 252, nazwaPrintful: 'Retro Trucker Hat | Yupoong 6606', nazwa: 'Retro Trucker Hat', typ: 'Hats', aop: false, opcja: 'Color',
     uwaga: 'Haft: płaskie kolory (złoto + krem), bez zdjęcia postaci — maszyna hafciarska nie wyszyje fotografii.',
-    miejsca: [m('embroidery_front_large', 'haft z przodu', 1650, 600, 'czapka')],
+    miejsca: [m('embroidery_front_large', 'haft z przodu', 1770, 600, 'czapka')],
     warianty: rozm([['Black', 8747], ['Charcoal/ Black', 16709]], () => 34) },
   { klucz: 'aop-plecak', katalogId: 279, nazwaPrintful: 'All-Over Print Backpack', nazwa: 'All-Over Backpack', typ: 'Bags', aop: true, opcja: 'Title',
-    miejsca: [m('default', 'przód', 4200, 5400, 'aop-glowny'), m('top', 'góra', 4200, 1500, 'aop-tlo'), m('bottom', 'dół', 4200, 1500, 'aop-tlo'), m('pocket', 'kieszeń', 3000, 2100, 'aop-pas')],
+    miejsca: [m('front', 'przód', 2175, 3075, 'aop-glowny'), m('top', 'góra', 4200, 1200, 'aop-tlo'), m('bottom', 'dół', 4200, 750, 'aop-tlo'), m('pocket', 'kieszeń', 1950, 1200, 'aop-pas')],
     warianty: [{ wartosc: 'One size', variantId: 9063, cenaEur: 89 }] },
   { klucz: 'aop-sukienka', katalogId: 896, nazwaPrintful: 'All-Over Print Slip Dress', nazwa: 'All-Over Slip Dress', typ: 'Dresses', aop: true, opcja: 'Size',
-    miejsca: [m('default', 'przód', 4800, 7800, 'aop-glowny'), m('back', 'tył', 4800, 7800, 'aop-tyl')],
+    miejsca: [m('front', 'przód', 5100, 6900, 'aop-glowny'), m('back', 'tył', 5100, 6900, 'aop-tyl')],
     warianty: rozm([['XS', 22904], ['S', 22906], ['M', 22908], ['L', 22910], ['XL', 22912], ['2XL', 22914]], (r) => (r === '2XL' ? 82 : 79)) },
   { klucz: 'aop-koszulka', katalogId: 257, nazwaPrintful: "All-Over Print Men's Crew Neck T-Shirt", nazwa: 'All-Over Tee', typ: 'T-Shirts', aop: true, opcja: 'Size',
-    miejsca: [m('default', 'przód', 5100, 6300, 'aop-glowny'), m('back', 'tył', 5100, 6300, 'aop-tyl'), m('sleeve_left', 'rękaw lewy', 2700, 1800, 'aop-pas'), m('sleeve_right', 'rękaw prawy', 2700, 1800, 'aop-pas')],
+    miejsca: [m('default', 'przód', 4200, 5400, 'aop-glowny'), m('back', 'tył', 4200, 5400, 'aop-tyl'), m('sleeve_left', 'rękaw lewy', 3000, 1800, 'aop-pas'), m('sleeve_right', 'rękaw prawy', 3000, 1800, 'aop-pas')],
     warianty: rozm([['XS', 8850], ['S', 8851], ['M', 8852], ['L', 8853], ['XL', 8854], ['2XL', 8855]], (r) => (r === '2XL' ? 52 : 49)) },
   { klucz: 'aop-bomber', katalogId: 390, nazwaPrintful: 'All-Over Print Unisex Bomber Jacket', nazwa: 'All-Over Bomber Jacket', typ: 'Jackets', aop: true, opcja: 'Size',
-    miejsca: [m('default', 'przód', 5400, 6600, 'aop-glowny'), m('back', 'tył', 5400, 6600, 'aop-tyl'), m('sleeve_left', 'rękaw lewy', 3300, 6000, 'aop-pas'), m('sleeve_right', 'rękaw prawy', 3300, 6000, 'aop-pas'), m('details', 'ściągacze i kołnierz', 4800, 1800, 'aop-tlo')],
+    miejsca: [m('front', 'przód', 4650, 5400, 'aop-glowny'), m('back', 'tył', 4650, 5400, 'aop-tyl'), m('sleeve_left', 'rękaw lewy', 4650, 5400, 'aop-pas'), m('sleeve_right', 'rękaw prawy', 4650, 5400, 'aop-pas'), m('details', 'ściągacze i kołnierz', 7950, 2700, 'aop-tlo')],
     warianty: rozm([['XS', 10877], ['S', 10878], ['M', 10879], ['L', 10880], ['XL', 10881], ['2XL', 10882], ['3XL', 10883]], (r) => (r === '2XL' || r === '3XL' ? 125 : 119)) },
   { klucz: 'aop-torba', katalogId: 84, nazwaPrintful: 'All-Over Print Tote Bag', nazwa: 'All-Over Tote Bag', typ: 'Bags', aop: true, opcja: 'Title',
-    miejsca: [m('default', 'obie strony torby', 4500, 4500, 'aop-glowny')],
+    miejsca: [m('default', 'obie strony torby', 2550, 2475, 'aop-glowny')],
     warianty: [{ wartosc: '15″×15″', variantId: 4533, cenaEur: 39 }] },
   { klucz: 'aop-poduszka', katalogId: 214, nazwaPrintful: 'All-Over Print Premium Pillow', nazwa: 'Premium Pillow', typ: 'Home Decor', aop: true, opcja: 'Size',
-    miejsca: [m('default', 'przód', 5700, 5700, 'aop-glowny'), m('back', 'tył', 5700, 5700, 'aop-tyl')],
+    miejsca: [m('front', 'przód', 2850, 2850, 'aop-glowny'), m('back', 'tył', 2850, 2850, 'aop-tyl')],
     warianty: [{ wartosc: '18″×18″', variantId: 9515, cenaEur: 49 }] },
   { klucz: 'aop-flaga', katalogId: 490, nazwaPrintful: 'All-Over Print Flag', nazwa: 'Cathedral Flag', typ: 'Home Decor', aop: true, opcja: 'Title',
-    miejsca: [m('default', 'flaga (poziom)', 9000, 5400, 'aop-glowny')],
+    miejsca: [m('front', 'flaga (poziom)', 9150, 5700, 'aop-glowny')],
     warianty: [{ wartosc: 'One size', variantId: 12584, cenaEur: 49 }] },
 ];
 

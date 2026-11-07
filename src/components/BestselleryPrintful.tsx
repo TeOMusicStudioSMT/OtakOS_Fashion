@@ -10,7 +10,7 @@ import { doPng, type TekstKolekcji } from '../utils/kompozycja360';
 import { PRODUKTY_PF, miejscaWariantu, nazwaPliku, rysujPlik, logoKwadrat, logoPoziome, baner, TLO, type MiejsceDruku, type ProduktPF, type WariantPF } from '../utils/bestsellery';
 
 const slug = (s: string) => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'kolekcja';
-interface Printfiles { success: boolean; message?: string; printfiles?: { printfile_id: number; width: number; height: number }[]; warianty?: Record<string, Record<string, number>> }
+interface Printfiles { success: boolean; message?: string; printfiles?: { printfile_id: number; width: number; height: number; can_rotate?: boolean }[]; warianty?: Record<string, Record<string, number>> }
 
 async function wyslijPng(adres: string, c: HTMLCanvasElement) {
   const r = await fetch(adres, { method: 'POST', headers: { 'Content-Type': 'image/png' }, body: await doPng(c) });
@@ -27,7 +27,9 @@ function miejscaZPrintful(p: ProduktPF, w: WariantPF, pf: Printfiles | null): { 
   const out: MiejsceDruku[] = [];
   for (const mi of baza) {
     const id = mapa[mi.placement]; const f = pf!.printfiles?.find((x) => x.printfile_id === id);
-    if (f) out.push({ ...mi, w: f.width, h: f.height });
+    // plakat/canvas 18×24″ Printful podaje poziomo (7200×5400, can_rotate) — projekt pionowy dostaje ten sam szablon obrócony
+    const obroc = f && f.can_rotate && (mi.w > mi.h) !== (f.width > f.height);
+    if (f) out.push({ ...mi, w: obroc ? f.height : f.width, h: obroc ? f.width : f.height });
   }
   return { miejsca: out.length ? out : baza, zrodlo: out.length ? 'printful' : 'orientacyjne' };
 }
@@ -78,7 +80,7 @@ export function BestselleryPrintful({ imie, wyciety, tekst, makiety, kolekcja, k
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error ?? `HTTP ${r.status}`);
       const dokladne = Object.values(zrodloWymiarow).filter((z) => z === 'printful').length;
-      setWynik(`${produkty.length} produktów, ${plikow} plików → public/nadruki/bestsellery/${postac}/ · wymiary z Printful: ${dokladne}/${produkty.length}${dokladne < produkty.length ? ' (reszta orientacyjna — wklej token Printful w Stole Produktowym i narysuj ponownie)' : ''}${d.most?.success === false || d.most?.blad ? ` · ⚠ most: ${d.most.message ?? d.most.blad}` : d.most?.bestsellery ? ` · most skopiował do sklep-shopify/${postac}/3-BESTSELLERY-PRINTFUL-I-ALL-OVER` : ' · ⚠ most nie zna jeszcze bestsellerów (stara wersja) — po restarcie mostu skopiuje je przy najbliższej synchronizacji'}`);
+      setWynik(`${produkty.length} produktów, ${plikow} plików → public/nadruki/bestsellery/${postac}/ · wymiary z Printful: ${dokladne}/${Object.keys(zrodloWymiarow).length} produktów katalogu${dokladne < Object.keys(zrodloWymiarow).length ? ' (reszta orientacyjna — wklej token Printful w Stole Produktowym i narysuj ponownie)' : ''}${d.most?.success === false || d.most?.blad ? ` · ⚠ most: ${d.most.message ?? d.most.blad}` : d.most?.bestsellery ? ` · most skopiował do sklep-shopify/${postac}/3-BESTSELLERY-PRINTFUL-I-ALL-OVER` : ' · ⚠ most nie zna jeszcze bestsellerów (stara wersja) — po restarcie mostu skopiuje je przy najbliższej synchronizacji'}`);
     } catch (e) { setBlad((e as Error).message); }
     setPraca('');
   };
