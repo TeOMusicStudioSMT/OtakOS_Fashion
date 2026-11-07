@@ -17,7 +17,7 @@ async function wyslijPng(adres: string, c: HTMLCanvasElement) {
   const d = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error((d as { error?: string }).error ?? `HTTP ${r.status}`);
 }
-const obraz = (src: string) => new Promise<HTMLImageElement>((ok, nie) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => nie(new Error(`nie wczytał się ${src}`)); i.src = src; });
+const wczytajObraz = (src: string) => new Promise<HTMLImageElement>((ok, nie) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => nie(new Error(`nie wczytał się ${src}`)); i.src = src; });
 
 /** Miejsca wariantu w rozmiarach z Printful (gdy przyszły); miejsca, których Printful dla wariantu nie ma, odpadają. */
 function miejscaZPrintful(p: ProduktPF, w: WariantPF, pf: Printfiles | null): { miejsca: MiejsceDruku[]; zrodlo: 'printful' | 'orientacyjne' } {
@@ -34,7 +34,7 @@ function miejscaZPrintful(p: ProduktPF, w: WariantPF, pf: Printfiles | null): { 
   return { miejsca: out.length ? out : baza, zrodlo: out.length ? 'printful' : 'orientacyjne' };
 }
 
-export function BestselleryPrintful({ imie, wyciety, tekst, makiety, kolekcja, kolor }: { imie: string; wyciety: HTMLCanvasElement | null; tekst: TekstKolekcji; makiety: string[]; kolekcja: string | null; kolor: string }) {
+export function BestselleryPrintful({ imie, wyciety, tekst, makiety, kolekcja, kolor, obraz }: { obraz?: string; imie: string; wyciety: HTMLCanvasElement | null; tekst: TekstKolekcji; makiety: string[]; kolekcja: string | null; kolor: string }) {
   const [wybrane, setWybrane] = useState<string[]>(PRODUKTY_PF.map((p) => p.klucz));
   const [praca, setPraca] = useState('');
   const [wynik, setWynik] = useState('');
@@ -48,6 +48,16 @@ export function BestselleryPrintful({ imie, wyciety, tekst, makiety, kolekcja, k
     setBlad(''); setWynik('');
     try {
       await czcionki();
+      // bez opowieści (np. kolekcja haftowana bez karty lore) — Kronikarz pisze ją po angielsku, zanim narysujemy plakaty i tyły
+      let t = tekst;
+      if (!(t.opowiesc || '').trim() && obraz) {
+        setPraca('Kronikarz pisze opowieść postaci (lokalny model, do kilku minut)…');
+        try {
+          const r = await fetch('/api/nadruki/opowiesc', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ obraz, jezyk: 'en' }) });
+          const d = await r.json();
+          if (r.ok && d.tekst?.opowiesc) t = { ...d.tekst, ...Object.fromEntries(Object.entries(tekst).filter(([, v]) => String(v ?? '').trim())), opowiesc: d.tekst.opowiesc, cytat: tekst.cytat || d.tekst.cytat, tytul: imie };
+        } catch { /* bez opowieści — plakat bez karty */ }
+      }
       const zrodloWymiarow: Record<string, string> = {}, produkty: unknown[] = [];
       let plikow = 0;
       for (const p of PRODUKTY_PF.filter((x) => wybrane.includes(x.klucz))) {
@@ -64,7 +74,7 @@ export function BestselleryPrintful({ imie, wyciety, tekst, makiety, kolekcja, k
             if (!gotowe.has(nazwa)) {
               setPraca(`${p.nazwa} · ${mi.nazwa} (${mi.w}×${mi.h})…`);
               await new Promise((r) => setTimeout(r, 0));
-              const c = rysujPlik(mi.rysunek, mi.w, mi.h, wyciety, tekst, imie, `${postac}-${p.klucz}-${mi.placement}`);
+              const c = rysujPlik(mi.rysunek, mi.w, mi.h, wyciety, t, imie, `${postac}-${p.klucz}-${mi.placement}`);
               await wyslijPng(`/api/nadruki/bestsellery/${postac}/plik?produkt=${p.klucz}&nazwa=${encodeURIComponent(nazwa)}`, c);
               gotowe.add(nazwa); plikow++;
             }
@@ -90,7 +100,7 @@ export function BestselleryPrintful({ imie, wyciety, tekst, makiety, kolekcja, k
     try {
       await czcionki();
       setPraca('Logo i baner…');
-      const mak = (await Promise.all(makiety.slice(0, 3).map((s) => obraz(s).catch(() => null)))).filter(Boolean) as HTMLImageElement[];
+      const mak = (await Promise.all(makiety.slice(0, 3).map((s) => wczytajObraz(s).catch(() => null)))).filter(Boolean) as HTMLImageElement[];
       const pliki: [string, HTMLCanvasElement][] = [
         ['logo-0.00g-style.png', logoKwadrat(2048, null)],
         ['logo-0.00g-style-czarne.png', logoKwadrat(2048, TLO)],

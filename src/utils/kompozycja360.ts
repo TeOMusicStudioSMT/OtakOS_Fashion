@@ -29,17 +29,39 @@ export async function wczytajMotyw(id: string): Promise<HTMLImageElement> {
   return img;
 }
 
-/** Tło motywu → przezroczyste (kolor z rogu, miękka krawędź), przycięte do treści. */
+/**
+ * Tło motywu → przezroczyste (kolor z rogu, miękka krawędź), przycięte do treści.
+ * Tylko tło POŁĄCZONE z brzegiem obrazka (wypełnianie od krawędzi) — 2026-11-07 Koralik z białym brzuszkiem
+ * na białym tle dostawał dziurę w brzuchu, bo znikał każdy piksel w kolorze tła.
+ */
 export function wytnijTlo(img: HTMLImageElement, tolerancja = 46): HTMLCanvasElement {
   const c = plotno(img.naturalWidth, img.naturalHeight), g = c.getContext('2d')!;
   g.drawImage(img, 0, 0);
   const d = g.getImageData(0, 0, c.width, c.height), p = d.data;
+  const W = c.width, H = c.height, n = W * H;
   const [r0, g0, b0] = [p[0], p[1], p[2]];
-  let x0 = c.width, y0 = c.height, x1 = 0, y1 = 0;
-  for (let i = 0; i < p.length; i += 4) {
-    const dl = Math.hypot(p[i] - r0, p[i + 1] - g0, p[i + 2] - b0);
-    if (dl < tolerancja) p[i + 3] = 0; else if (dl < tolerancja * 1.6) p[i + 3] = Math.round(255 * (dl - tolerancja) / (tolerancja * 0.6));
-    if (p[i + 3] > 20) { const k = i / 4, x = k % c.width, y = (k / c.width) | 0; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  const dl = new Float32Array(n);
+  for (let k = 0; k < n; k++) dl[k] = Math.hypot(p[k * 4] - r0, p[k * 4 + 1] - g0, p[k * 4 + 2] - b0);
+  const stan = new Uint8Array(n), kolejka = new Int32Array(n);   // 1 = tło, 2 = miękka krawędź
+  let glowa = 0, ogon = 0;
+  const odwiedz = (k: number) => {
+    if (stan[k]) return;
+    // wypełnianie idzie tylko przez kolory naprawdę bliskie tłu (połowa tolerancji) — kremowy brzeg nie jest już mostem do środka
+    if (dl[k] < tolerancja * 0.5) { stan[k] = 1; kolejka[ogon++] = k; }
+    else if (dl[k] < tolerancja * 1.6) stan[k] = 2;
+  };
+  for (let x = 0; x < W; x++) { odwiedz(x); odwiedz((H - 1) * W + x); }
+  for (let y = 0; y < H; y++) { odwiedz(y * W); odwiedz(y * W + W - 1); }
+  while (glowa < ogon) {
+    const k = kolejka[glowa++], x = k % W;
+    if (x > 0) odwiedz(k - 1); if (x < W - 1) odwiedz(k + 1);
+    if (k >= W) odwiedz(k - W); if (k < n - W) odwiedz(k + W);
+  }
+  let x0 = W, y0 = H, x1 = 0, y1 = 0;
+  for (let k = 0; k < n; k++) {
+    const i = k * 4;
+    if (stan[k] === 1) p[i + 3] = 0; else if (stan[k] === 2) p[i + 3] = Math.round(255 * Math.min(1, Math.max(0, (dl[k] - tolerancja * 0.5) / (tolerancja * 1.1))));
+    if (p[i + 3] > 20) { const x = k % W, y = (k / W) | 0; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
   }
   g.putImageData(d, 0, 0);
   if (x1 <= x0 || y1 <= y0) return c;
@@ -146,8 +168,8 @@ export function plecy(m: HTMLCanvasElement, t: TekstKolekcji, pal: Paleta, ziarn
   const pod = [t.podtytul, t.zywiol && `${ETYKIETA_ZYWIOLU[jezykNapisow]}: ${t.zywiol.toUpperCase()}`].filter(Boolean).join('   ·   ');
   tekstSrodek(g, pod, W / 2, H * 0.71, `600 ${W * 0.03}px Cinzel, Georgia, serif`, pal.zloto, W * 0.004, W * 0.86);
   // karta opowieści (ramka 0.735–0.895), cytat i edycja pod nią — każde w swoim pasie
-  g.strokeStyle = pal.zloto; g.globalAlpha = 0.7; g.lineWidth = W * 0.0018;
-  g.strokeRect(W * 0.12, H * 0.735, W * 0.76, H * 0.16); g.globalAlpha = 1;
+  // bez opowieści nie ma karty (pusta ramka wyglądała jak błąd druku)
+  if ((t.opowiesc || '').trim()) { g.strokeStyle = pal.zloto; g.globalAlpha = 0.7; g.lineWidth = W * 0.0018; g.strokeRect(W * 0.12, H * 0.735, W * 0.76, H * 0.16); g.globalAlpha = 1; }
   g.font = `400 ${W * 0.027}px "Plus Jakarta Sans", Georgia, serif`; g.fillStyle = pal.tusz; g.textAlign = 'center'; g.textBaseline = 'middle';
   const linie = zawin(g, t.opowiesc || '', W * 0.68).slice(0, 5), krok = W * 0.036;
   const y0 = H * 0.815 - ((linie.length - 1) * krok) / 2;

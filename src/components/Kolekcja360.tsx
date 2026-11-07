@@ -280,7 +280,7 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
           {pakiet && <p>✓ {pakiet.produktow} produktów · <a href={pakiet.csv} download className="underline">produkty.csv</a> · katalog <code>public{pakiet.katalog}</code> (CZYTAJ.txt w środku)</p>}
           <label className="block">Link kolekcji w sklepie (po imporcie w Shopify) — trafi do opisów filmów YouTube z {imieSklepu}<br /><span className="flex gap-2"><input value={linkSklepu} onChange={(e) => setLinkSklepu(e.target.value)} placeholder="https://twoj-sklep.myshopify.com/collections/borowik" className="flex-1 rounded bg-black/40 px-2 py-1" /><button onClick={() => void zapiszLink()} className="rounded border px-3 py-1" style={{ borderColor: themeConfig.hex }}>🔗 Zapisz w Katedrze</button></span></label>
         </div>}
-        {ostatniaNaModel.length > 0 && <BestselleryPrintful imie={imieSklepu} wyciety={wyciety} kolor={kolor} kolekcja={ostatniaNaModel[0]?.id ?? null}
+        {ostatniaNaModel.length > 0 && <BestselleryPrintful imie={imieSklepu} wyciety={wyciety} kolor={kolor} obraz={motyw.id} kolekcja={ostatniaNaModel[0]?.id ?? null}
           tekst={{ ...(ostatniaNaModel.find((k) => k.tekst?.opowiesc)?.tekst ?? tekst), tytul: imieSklepu }}
           makiety={[...ostatniaNaModel].sort((a, b) => Number(KURTKI.includes(b.ubior)) - Number(KURTKI.includes(a.ubior))).map((k) => k.makietaPrzod).filter(Boolean) as string[]} />}
       </>}
