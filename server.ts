@@ -8,6 +8,7 @@ import { zaprojektuj as zaprojektujLokalnie, stanKrawca } from './krawiec-lokaln
 import { kadry as kadryProdukcji, projekty as projektyKatedry, wykuj, kreacje as wczytajKreacje } from './jajo-mody';
 import { narysuj, lista as wczytajWizualizacje, usun as usunWizualizacje } from './wizualizacje';
 import * as Kolekcje from './kolekcje';
+import * as Bestsellery from './bestsellery';
 import { lista as wczytajNadruki, motywy as motywyNadrukow, makieta as makietaUbioru, nadrukuj, usun as usunNadruk, UBIORY, KOLORY } from './nadruki';
 import { przeglad } from './dozorca';
 import { obroc, lista as wczytajObroty, wariantyWzoru, DLUGOSCI as DLUGOSCI_OBROTU } from './obrot';
@@ -269,6 +270,35 @@ app.get('/api/nadruki/sklep/stan', async (_req, res) => {
 app.post('/api/nadruki/pakiet-sklepu', async (req, res) => {
   try { if (req.body?.ceny) await Kolekcje.zapiszCeny(req.body.ceny); res.json(await Kolekcje.pakietSklepu(req.body ?? {})); }
   catch (err: any) { res.status(422).json({ error: String(err?.message ?? err) }); }
+});
+// 🛍️🖨️ Bestsellery Printful + 🏷️ logo i baner sklepu — rysuje przeglądarka, serwer zapisuje, most kopiuje do sklep-shopify
+const MOST = () => process.env.OTAKOS_MOST || 'http://127.0.0.1:3001';
+app.get('/api/nadruki/bestsellery', async (_req, res) => { res.json(await Bestsellery.lista()); });
+app.post('/api/nadruki/bestsellery/:postac/plik', express.raw({ type: 'image/png', limit: '250mb' }), async (req, res) => {
+  try { res.json(await Bestsellery.zapiszPlik(req.params.postac, String(req.query.produkt ?? ''), String(req.query.nazwa ?? ''), req.body)); }
+  catch (err: any) { res.status(422).json({ error: String(err?.message ?? err) }); }
+});
+app.post('/api/nadruki/bestsellery/:postac/manifest', async (req, res) => {
+  try {
+    const manifest = await Bestsellery.zapiszManifest(req.params.postac, req.body ?? {});
+    const r = await fetch(`${MOST()}/api/stol-produktowy/synchronizuj`, { method: 'POST', signal: AbortSignal.timeout(120000) }).then((x) => x.json()).catch((e) => ({ blad: `most: ${e?.message ?? e}` }));
+    res.json({ manifest, most: r });
+  } catch (err: any) { res.status(422).json({ error: String(err?.message ?? err) }); }
+});
+app.post('/api/nadruki/brand/:plik', express.raw({ type: 'image/png', limit: '40mb' }), async (req, res) => {
+  try { res.json(await Bestsellery.zapiszBrand(req.params.plik, req.body)); }
+  catch (err: any) { res.status(422).json({ error: String(err?.message ?? err) }); }
+});
+app.post('/api/nadruki/brand-synchronizuj', async (_req, res) => {
+  const r = await fetch(`${MOST()}/api/stol-produktowy/synchronizuj`, { method: 'POST', signal: AbortSignal.timeout(120000) }).then((x) => x.json()).catch((e) => ({ success: false, message: `Most Katedry nie odpowiada: ${e?.message ?? e}` }));
+  res.json(r);
+});
+// dokładne wymiary szablonów Printful — przez most (token w Skarbcu Katedry); bez tokenu most mówi powód
+app.get('/api/nadruki/printful/printfiles/:id', async (req, res) => {
+  try {
+    const r = await fetch(`${MOST()}/api/printful/printfiles/${encodeURIComponent(req.params.id)}`, { signal: AbortSignal.timeout(30000) });
+    res.status(r.status).json(await r.json().catch(() => ({ success: false, message: `most: HTTP ${r.status}` })));
+  } catch (err: any) { res.json({ success: false, message: `Most Katedry nie odpowiada: ${err?.message ?? err}` }); }
 });
 app.post('/api/nadruki/przetlumacz', async (req, res) => {
   try { res.json({ tekst: await Kolekcje.przetlumacz(req.body?.tekst, String(req.body?.jezyk ?? 'en')) }); }

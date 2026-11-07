@@ -15,12 +15,12 @@ export const paleta = (kolor: string): Paleta => JASNE.includes(kolor)
 /** Imię z opisu Pracowni („Mini-TeOgochi „Bliznota”: …” → Bliznota). */
 export const imieZOpisu = (opis: string) => (/[„"]([^"”]{2,30})[”"]/.exec(opis)?.[1] ?? opis.split(/[:,.]/)[0]).trim().slice(0, 30);
 
-function losowe(ziarno: string) {
+export function losowe(ziarno: string) {
   let h = 2166136261;
   for (const c of ziarno) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); }
   return () => { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return ((h >>> 0) % 100000) / 100000; };
 }
-const plotno = (w: number, h: number) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+export const plotno = (w: number, h: number) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
 
 export async function wczytajMotyw(id: string): Promise<HTMLImageElement> {
   // onload, nie img.decode(): decode() w karcie w tle potrafi czekać bez końca
@@ -49,7 +49,7 @@ export function wytnijTlo(img: HTMLImageElement, tolerancja = 46): HTMLCanvasEle
 }
 
 /** Napis na środku; `maxW` = zmniejsz czcionkę, aż się zmieści (nic nie ucina się na brzegu nadruku). */
-function tekstSrodek(g: CanvasRenderingContext2D, t: string, x: number, y: number, font: string, kolor: string, odstep = 0, maxW = Infinity) {
+export function tekstSrodek(g: CanvasRenderingContext2D, t: string, x: number, y: number, font: string, kolor: string, odstep = 0, maxW = Infinity) {
   g.fillStyle = kolor; g.textAlign = 'center'; g.textBaseline = 'middle';
   (g as any).letterSpacing = `${odstep}px`;
   g.font = font;
@@ -61,7 +61,7 @@ function tekstSrodek(g: CanvasRenderingContext2D, t: string, x: number, y: numbe
   g.fillText(t, x, y);
   (g as any).letterSpacing = '0px';
 }
-function zawin(g: CanvasRenderingContext2D, t: string, szer: number): string[] {
+export function zawin(g: CanvasRenderingContext2D, t: string, szer: number): string[] {
   const linie: string[] = []; let l = '';
   for (const s of t.split(/\s+/)) { const pr = l ? `${l} ${s}` : s; if (g.measureText(pr).width > szer && l) { linie.push(l); l = s; } else l = pr; }
   if (l) linie.push(l);
@@ -69,7 +69,7 @@ function zawin(g: CanvasRenderingContext2D, t: string, szer: number): string[] {
 }
 
 /** Aureola 0.00G: kręgi, krąg run, heksagram, gwiazdozbiór i poświata — tło, z którego „wychodzi” postać. */
-function aureola(g: CanvasRenderingContext2D, cx: number, cy: number, r: number, pal: Paleta, los: () => number) {
+export function aureola(g: CanvasRenderingContext2D, cx: number, cy: number, r: number, pal: Paleta, los: () => number) {
   const grad = g.createRadialGradient(cx, cy, r * 0.1, cx, cy, r * 1.05);
   grad.addColorStop(0, pal.cien); grad.addColorStop(1, 'rgba(0,0,0,0)');
   g.fillStyle = grad; g.beginPath(); g.arc(cx, cy, r * 1.05, 0, Math.PI * 2); g.fill();
@@ -104,7 +104,7 @@ function aureola(g: CanvasRenderingContext2D, cx: number, cy: number, r: number,
   g.globalAlpha = 1;
 }
 
-function postac(g: CanvasRenderingContext2D, m: HTMLCanvasElement, cx: number, cy: number, maxW: number, maxH: number) {
+export function postac(g: CanvasRenderingContext2D, m: HTMLCanvasElement, cx: number, cy: number, maxW: number, maxH: number) {
   const s = Math.min(maxW / m.width, maxH / m.height);
   g.imageSmoothingQuality = 'high';
   g.drawImage(m, cx - (m.width * s) / 2, cy - (m.height * s) / 2, m.width * s, m.height * s);
@@ -181,7 +181,7 @@ export const doPng = (c: HTMLCanvasElement) => new Promise<Blob>((ok, nie) => c.
 const KREM = '#f3ead6', CZERN = '#141414';
 
 /** Sylwetka (alfa) rozlana o r px — obrys filcu/konturu: kopie sylwetki w 24 kierunkach. */
-function rozlej(src: HTMLCanvasElement, r: number, kolor: string): HTMLCanvasElement {
+export function rozlej(src: HTMLCanvasElement, r: number, kolor: string): HTMLCanvasElement {
   const c = plotno(src.width + r * 2, src.height + r * 2), g = c.getContext('2d')!;
   for (let i = 0; i < 24; i++) { const a = (i / 24) * Math.PI * 2; g.drawImage(src, r + Math.cos(a) * r, r + Math.sin(a) * r); }
   g.drawImage(src, r, r);
