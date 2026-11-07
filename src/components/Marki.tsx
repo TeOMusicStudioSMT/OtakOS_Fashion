@@ -24,6 +24,10 @@ import {
 } from '../services/marki';
 import { pobierzWizualizacje, adresKadru, type Wizualizacja } from '../services/kreacja';
 
+/** 👕 Żywa kolekcja (to, co idzie do sklepu) — z /api/nadruki/sklep/stan. */
+interface ZywaKolekcja { id: string; ubior: string; tytul?: string; postac: string }
+const podgladKolekcji = (id: string) => `/nadruki/kolekcje/${id}/podglad-przod.png`;
+
 export function Marki() {
     const { themeConfig } = useTheme();
     const [marki, setMarki] = useState<Marka[]>([]);
@@ -34,6 +38,7 @@ export function Marki() {
     const [zajety, setZajety] = useState('');
     const [blad, setBlad] = useState('');
     const [ofirmowane, setOfirmowane] = useState<Record<string, string>>({});
+    const [kolekcje, setKolekcje] = useState<ZywaKolekcja[]>([]);
 
     const odswiez = useCallback(async () => {
         try {
@@ -46,6 +51,7 @@ export function Marki() {
             setBlad(e instanceof Error ? e.message : String(e));
         }
         void pobierzWizualizacje().then(setWizualizacje).catch(() => setWizualizacje([]));
+        void fetch('/api/nadruki/sklep/stan').then((r) => r.json()).then((d) => setKolekcje((d.postacie ?? []).flatMap((p: { imie: string; aktualne: { id: string; ubior: string; tytul?: string }[] }) => p.aktualne.map((k) => ({ ...k, postac: p.imie }))))).catch(() => setKolekcje([]));
     }, []);
 
     useEffect(() => { void odswiez(); }, [odswiez]);
@@ -70,7 +76,17 @@ export function Marki() {
         finally { setZajety(''); }
     };
 
-    const ofirmuj = async (m: Marka, w: Wizualizacja) => {
+    const usunSzkice = async (ids: string[]) => {
+        if (!ids.length && !confirm(`Usunąć z listy WSZYSTKIE stare szkice (${wizualizacje.length})? Obrazy w ComfyUI zostaną na dysku.`)) return;
+        setBlad('');
+        try {
+            const r = await fetch('/api/wizualizacje/usun', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }) });
+            if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || `HTTP ${r.status}`);
+            await odswiez();
+        } catch (e) { setBlad(e instanceof Error ? e.message : String(e)); }
+    };
+
+    const ofirmuj = async (m: Marka, w: Pick<Wizualizacja, 'id' | 'plik'>) => {
         setZajety(`${m.id}:${w.id}`);
         setBlad('');
         try {
@@ -243,41 +259,43 @@ export function Marki() {
                         </label>
                     </div>
 
-                    {/* ── Ofirmowanie z automatu ── */}
-                    {!wizualizacje.length ? (
-                        <p className="text-[10px] font-mono text-slate-500 italic">
-                            Nie ma jeszcze narysowanych kreacji. Narysuj coś w zakładce KREACJA — logo nakłada się na rysunek, nie na kadr.
-                        </p>
+                    {/* ── Ofirmowanie: żywe Kolekcje 360° (to, co idzie do sklepu i na teo.center) ── */}
+                    {!kolekcje.length ? (
+                        <p className="text-[10px] font-mono text-slate-500 italic">Nie ma jeszcze gotowych Kolekcji 360° — uszyj je w zakładce kolekcji; logo nakłada się na podgląd produktu.</p>
                     ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
-                            {wizualizacje.map((w) => {
-                                const klucz = `${m.id}:${w.id}`;
+                            {kolekcje.map((k) => {
+                                const klucz = `${m.id}:${k.id}`;
                                 const gotowe = ofirmowane[klucz];
                                 return (
-                                    <div key={w.id} className="rounded-xl overflow-hidden border bg-black/40" style={ramka}>
-                                        <div className="aspect-square bg-black/60">
-                                            <img
-                                                src={gotowe ?? adresKadru(w.plik)}
-                                                alt={w.id}
-                                                loading="lazy"
-                                                className="w-full h-full object-contain"
-                                            />
-                                        </div>
-                                        <button
-                                            onClick={() => void ofirmuj(m, w)}
-                                            disabled={!!zajety || !m.logo}
-                                            title={m.logo ? 'Nałóż logo tej marki na tę kreację' : 'Najpierw wgraj logo marki'}
-                                            className="w-full px-2 py-1 text-[9px] font-mono font-bold border-t transition-all cursor-pointer disabled:opacity-30"
-                                            style={{ ...ramka, color: gotowe ? themeConfig.hex : undefined }}
-                                        >
-                                            {zajety === klucz
-                                                ? <><Loader2 size={9} className="inline animate-spin mr-1" />…</>
-                                                : gotowe ? '✓ OFIRMOWANA' : <><Stamp size={9} className="inline mr-1" />OFIRMUJ</>}
+                                    <div key={k.id} className="rounded-xl overflow-hidden border bg-black/40" style={ramka}>
+                                        <div className="aspect-square bg-black/60"><img src={gotowe ?? podgladKolekcji(k.id)} alt={k.tytul ?? k.id} loading="lazy" className="w-full h-full object-contain" /></div>
+                                        <div className="truncate px-2 pt-1 text-[9px] font-mono text-slate-400" title={`${k.postac} — ${k.tytul ?? ''}`}>{k.postac} · {k.tytul ?? k.ubior}</div>
+                                        <button onClick={() => void ofirmuj(m, { id: k.id, plik: podgladKolekcji(k.id) })} disabled={!!zajety || !m.logo}
+                                            title={m.logo ? 'Nałóż logo tej marki na podgląd produktu (oryginał zostaje)' : 'Najpierw wgraj logo marki'}
+                                            className="w-full px-2 py-1 text-[9px] font-mono font-bold border-t transition-all cursor-pointer disabled:opacity-30" style={{ ...ramka, color: gotowe ? themeConfig.hex : undefined }}>
+                                            {zajety === klucz ? <><Loader2 size={9} className="inline animate-spin mr-1" />…</> : gotowe ? '✓ OFIRMOWANA' : <><Stamp size={9} className="inline mr-1" />OFIRMUJ</>}
                                         </button>
                                     </div>
                                 );
                             })}
                         </div>
+                    )}
+
+                    {/* ── Stare szkice FLUX (sprzed Kolekcji 360°) — zwinięte, do usunięcia ── */}
+                    {wizualizacje.length > 0 && (
+                        <details className="rounded-xl border p-2" style={ramka}>
+                            <summary className="cursor-pointer text-[10px] font-mono text-slate-500">Stare szkice FLUX ({wizualizacje.length}) — czyste makiety bez wzoru, sprzed Kolekcji 360°</summary>
+                            <div className="mt-2 flex justify-end"><button onClick={() => void usunSzkice([])} className="rounded-lg border px-2 py-1 text-[9px] font-mono text-red-300" style={ramka}><Trash2 size={9} className="inline mr-1" />usuń wszystkie z listy</button></div>
+                            <div className="mt-2 grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-8 gap-2">
+                                {wizualizacje.map((w) => (
+                                    <div key={w.id} className="relative rounded-lg overflow-hidden border bg-black/40" style={ramka}>
+                                        <img src={adresKadru(w.plik)} alt={w.id} loading="lazy" className="aspect-square w-full object-contain" />
+                                        <button onClick={() => void usunSzkice([w.id])} title="usuń z listy (obraz w ComfyUI zostaje)" className="absolute right-1 top-1 rounded bg-black/70 p-1 text-red-300"><Trash2 size={10} /></button>
+                                    </div>
+                                ))}
+                            </div>
+                        </details>
                     )}
                 </div>
             ))}

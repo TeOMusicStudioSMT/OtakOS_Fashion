@@ -53,6 +53,18 @@ async function zapisz(lista: Wizualizacja[]) {
 export const lista = wczytaj;
 
 /**
+ * 🗑 Stare szkice (2026-11-07: „Brand pokazuje stary widok — jak usunąć te szablony”): czyste makiety FLUX sprzed
+ * Kolekcji 360°. Usunięcie zdejmuje wpis z listy (wizualizacje.json); obraz w wyjściu ComfyUI zostaje.
+ * `ids` puste = wszystkie.
+ */
+export async function usun(ids: string[] = []) {
+    const l = await wczytaj();
+    const zostaja = ids.length ? l.filter((w) => !ids.includes(w.id)) : [];
+    await zapisz(zostaja);
+    return { usuniete: l.length - zostaja.length, zostalo: zostaja.length };
+}
+
+/**
  * Narysuj kreację i zapamiętaj wynik.
  *
  * ⚠️ CZEKAMY TU, W SERWERZE, a nie w przeglądarce. Zmierzone na FLUX.2 klein:

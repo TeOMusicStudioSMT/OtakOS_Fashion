@@ -310,7 +310,10 @@ export async function pakietSklepu({ imie, kolekcje: ids, ceny = {}, waluta = 'E
     if (brak.length) throw new Error(`Podaj cenę dla: ${brak.map((u) => UBIORY[u]?.nazwa ?? u).join(', ')}.`);
     const baza = String(bazaObrazow || '').replace(/\/+$/, '');
     if (baza && !/^https:\/\//.test(baza)) throw new Error('Adres obrazów musi być https.');
-    const kat = path.join(PUBLIC, 'nadruki', 'sklep', slug(nazwa));
+    // budowa w katalogu tymczasowym („.<postać>-nowy”), podmiana na końcu — Stół Produktowy nigdy nie widzi pół-paczki
+    // (2026-11-07: odświeżanie po szyciu kasowało paczkę Borowika na czas przebudowy, Stół widział go jako usuniętego)
+    const docelowy = path.join(PUBLIC, 'nadruki', 'sklep', slug(nazwa));
+    const kat = path.join(PUBLIC, 'nadruki', 'sklep', `.${slug(nazwa)}-nowy`);
     await fs.rm(kat, { recursive: true, force: true }); await fs.mkdir(kat, { recursive: true });
     const wiersze = [['Handle', 'Title', 'Body (HTML)', 'Vendor', 'Type', 'Tags', 'Published', 'Option1 Name', 'Option1 Value', 'Variant SKU', 'Variant Price', 'Variant Requires Shipping', 'Variant Taxable', 'Image Src', 'Image Position', 'Image Alt Text', 'Status']];
     for (const k of lista) {
@@ -353,7 +356,22 @@ export async function pakietSklepu({ imie, kolekcje: ids, ceny = {}, waluta = 'E
         'Makiety to rysunek FLUX, nie zdjęcie produktu drukarni — na stronie sklepu lepiej podmienić je na makiety z kreatora drukarni.',
         `Walutę sklepu ustawiasz w Shopify (CSV podaje same liczby — tu ${waluta}).`,
     ].join('\n'), 'utf8');
+    // podmiana PLIKAMI, nie katalogiem: Windows odmawia przemianowania katalogu, gdy ktoś (Vite, Eksplorator) trzyma w nim
+    // uchwyt (2026-11-07: EPERM na rename „sklep/borowik”) — kopiujemy nowe pliki, potem usuwamy to, czego w nowej paczce nie ma
+    await wymienKatalog(kat, docelowy);
+    await fs.rm(kat, { recursive: true, force: true }).catch(() => {});
     return { katalog: `/nadruki/sklep/${slug(nazwa)}`, csv: `/nadruki/sklep/${slug(nazwa)}/produkty.csv`, produktow: lista.length, wierszy: wiersze.length - 1 };
+}
+
+/** Zawartość `cel` = dokładnie `zrodlo` (kopie plików, zbędne usunięte); `produkty.csv` kopiowany na końcu. */
+async function wymienKatalog(zrodlo: string, cel: string) {
+    await fs.mkdir(cel, { recursive: true });
+    const wpisy = await fs.readdir(zrodlo, { withFileTypes: true });
+    for (const w of wpisy.filter((x) => x.isDirectory())) await wymienKatalog(path.join(zrodlo, w.name), path.join(cel, w.name));
+    for (const w of wpisy.filter((x) => x.isFile() && x.name !== 'produkty.csv')) await fs.copyFile(path.join(zrodlo, w.name), path.join(cel, w.name));
+    const nowe = new Set(wpisy.map((x) => x.name));
+    for (const w of await fs.readdir(cel, { withFileTypes: true })) if (!nowe.has(w.name)) await fs.rm(path.join(cel, w.name), { recursive: true, force: true }).catch(() => {});
+    if (nowe.has('produkty.csv')) await fs.copyFile(path.join(zrodlo, 'produkty.csv'), path.join(cel, 'produkty.csv'));
 }
 
 export async function usun(id: string) { await czytaj(id); await fs.rm(dir(id), { recursive: true, force: true }); return { usunieta: id }; }
@@ -408,7 +426,7 @@ export function odswiezSklep({ jezyk = 'en' } = {}) {
         const zywe = new Set(postacie.map((p) => p.katalog));
         const usuniete: string[] = [];
         for (const d of await fs.readdir(SKLEP, { withFileTypes: true }).catch(() => [])) {
-            if (d.isDirectory() && !zywe.has(d.name) && fsSync.existsSync(path.join(SKLEP, d.name, 'produkty.csv'))) { await fs.rm(path.join(SKLEP, d.name), { recursive: true, force: true }); usuniete.push(d.name); }
+            if (d.isDirectory() && /^[a-z0-9][a-z0-9-]*$/.test(d.name) && !zywe.has(d.name) && fsSync.existsSync(path.join(SKLEP, d.name, 'produkty.csv'))) { await fs.rm(path.join(SKLEP, d.name), { recursive: true, force: true }); usuniete.push(d.name); }
         }
         return { postacie: zrobione, usuniete, kiedy: new Date().toISOString() };
     });

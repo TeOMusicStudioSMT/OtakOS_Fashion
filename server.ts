@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 import { GoogleGenAI, Type } from '@google/genai';
 import { zaprojektuj as zaprojektujLokalnie, stanKrawca } from './krawiec-lokalny';
 import { kadry as kadryProdukcji, projekty as projektyKatedry, wykuj, kreacje as wczytajKreacje } from './jajo-mody';
-import { narysuj, lista as wczytajWizualizacje } from './wizualizacje';
+import { narysuj, lista as wczytajWizualizacje, usun as usunWizualizacje } from './wizualizacje';
 import * as Kolekcje from './kolekcje';
 import { lista as wczytajNadruki, motywy as motywyNadrukow, makieta as makietaUbioru, nadrukuj, usun as usunNadruk, UBIORY, KOLORY } from './nadruki';
 import { przeglad } from './dozorca';
@@ -177,13 +177,18 @@ app.post('/api/marki/naloz', async (req, res) => {
     const marka = (await wczytajMarki()).find((m) => m.id === markaId);
     if (!marka) throw new Error('Nie ma takiej marki.');
 
-    // Kreacja żyje w Katedrze — ściągamy ją przez most do pliku tymczasowego.
-    const most = process.env.OTAKOS_MOST || 'http://127.0.0.1:3001';
-    const r = await fetch(`${most}${zrodloUrl}`, { signal: AbortSignal.timeout(60000) });
-    if (!r.ok) throw new Error(`Nie pobrałem kreacji: HTTP ${r.status}`);
     const tmp = path.join(process.cwd(), 'OtakOs_Fashion', `_tmp_${Date.now()}.png`);
     await fsp.mkdir(path.dirname(tmp), { recursive: true });
-    await fsp.writeFile(tmp, Buffer.from(await r.arrayBuffer()));
+    // 👕 podgląd żywej Kolekcji 360° leży tutaj (public/nadruki/kolekcje/<id>/podglad-*.png) — bez mostu
+    const lokalna = /^\/nadruki\/kolekcje\/k-[0-9a-f]{8}\/podglad-(przod|tyl)\.png$/.exec(String(zrodloUrl));
+    if (lokalna) await fsp.copyFile(path.join(process.cwd(), 'public', String(zrodloUrl)), tmp);
+    else {
+      // Stary szkic żyje w Katedrze — ściągamy go przez most do pliku tymczasowego.
+      const most = process.env.OTAKOS_MOST || 'http://127.0.0.1:3001';
+      const r = await fetch(`${most}${zrodloUrl}`, { signal: AbortSignal.timeout(60000) });
+      if (!r.ok) throw new Error(`Nie pobrałem kreacji: HTTP ${r.status}`);
+      await fsp.writeFile(tmp, Buffer.from(await r.arrayBuffer()));
+    }
 
     try {
       res.json(await nalozLogo({ marka, zrodlo: tmp, nazwaWynikowa: nazwa || 'kreacja' }));
@@ -312,6 +317,19 @@ app.delete('/api/nadruki/:id', async (req, res) => {
 /** Co już narysowane. */
 app.get('/api/wizualizacje', async (_req, res) => {
   res.json({ wizualizacje: await wczytajWizualizacje() });
+});
+app.post('/api/wizualizacje/usun', async (req, res) => {
+  try { res.json(await usunWizualizacje(Array.isArray(req.body?.ids) ? req.body.ids.map(String) : [])); }
+  catch (err: any) { res.status(400).json({ error: String(err?.message ?? err) }); }
+});
+
+/**
+ * 🏷️ Marka publicznie (dla wizytówki Katedry i teo.center): pierwsza marka z logo — nazwa, opis, adres logo.
+ * Most Katedry czyta to i podaje dalej; samego pliku logo nie ma w wizytówce bez tej trasy.
+ */
+app.get('/api/marki/publiczna', async (_req, res) => {
+  const m = (await wczytajMarki()).find((x) => x.logo);
+  res.json({ marka: m ? { id: m.id, nazwa: m.nazwa, opis: m.opis, logo: `/api/marki/logo/${encodeURIComponent(path.basename(m.logo!))}` } : null });
 });
 
 // ── 🔄 OBRÓT KREACJI — prezentacja produktu, nie pokaz mody ──────────
