@@ -52,11 +52,37 @@ export function wytnijTlo(img: HTMLImageElement, tolerancja = 46): HTMLCanvasEle
   };
   for (let x = 0; x < W; x++) { odwiedz(x); odwiedz((H - 1) * W + x); }
   for (let y = 0; y < H; y++) { odwiedz(y * W); odwiedz(y * W + W - 1); }
-  while (glowa < ogon) {
-    const k = kolejka[glowa++], x = k % W;
-    if (x > 0) odwiedz(k - 1); if (x < W - 1) odwiedz(k + 1);
-    if (k >= W) odwiedz(k - W); if (k < n - W) odwiedz(k + W);
+  const rozlej = () => {
+    while (glowa < ogon) {
+      const k = kolejka[glowa++], x = k % W;
+      if (x > 0) odwiedz(k - 1); if (x < W - 1) odwiedz(k + 1);
+      if (k >= W) odwiedz(k - W); if (k < n - W) odwiedz(k + W);
+    }
+  };
+  rozlej();
+  // Zamknięte plamy tła (między nogami, zamknięte cieniem na podłodze): płaskie jak tło — średnie odchylenie < 7 (zmierzone
+  // 2026-11-07: tło między nogami Borowika/Pęcherzika ≈ 4, brzuszek Koralika 14,5, krążek Pęcherzika 11,7 — te zostają).
+  const PLAMA = 300, PLASKIE = 7;
+  const plama = new Int32Array(n);
+  for (let s = 0; s < n; s++) {
+    if (stan[s] || dl[s] >= tolerancja * 0.5) continue;
+    let h = 0, t = 0, suma = 0;
+    stan[s] = 3; plama[t++] = s;
+    while (h < t) {
+      const k = plama[h++], x = k % W; suma += dl[k];
+      for (const kk of [x > 0 ? k - 1 : -1, x < W - 1 ? k + 1 : -1, k >= W ? k - W : -1, k < n - W ? k + W : -1]) {
+        if (kk < 0 || stan[kk] || dl[kk] >= tolerancja * 0.5) continue;
+        stan[kk] = 3; plama[t++] = kk;
+      }
+    }
+    const tlo = t > PLAMA && suma / t < PLASKIE;
+    for (let i = 0; i < t; i++) {
+      const k = plama[i];
+      if (tlo) { stan[k] = 0; odwiedz(k); } else stan[k] = 4;   // 4 = jasne miejsce postaci (zostaje)
+    }
+    if (tlo) rozlej();
   }
+  for (let k = 0; k < n; k++) if (stan[k] === 4) stan[k] = 0;
   let x0 = W, y0 = H, x1 = 0, y1 = 0;
   for (let k = 0; k < n; k++) {
     const i = k * 4;
