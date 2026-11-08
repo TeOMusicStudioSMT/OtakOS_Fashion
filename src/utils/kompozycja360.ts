@@ -83,6 +83,23 @@ export function wytnijTlo(img: HTMLImageElement, tolerancja = 46): HTMLCanvasEle
     if (tlo) rozlej();
   }
   for (let k = 0; k < n; k++) if (stan[k] === 4) stan[k] = 0;
+  // Cień na podłodze (2026-11-08: szare skrawki pod stopami świeciły bielą na ciemnym plecaku): w dolnych 18 % postaci
+  // tło rozlewa się dalej przez SZARE piksele (bez barwy, max−min kanałów < 16) — stopy mają kolor, cień nie.
+  {
+    let gy0 = H, gy1 = 0;
+    for (let k = 0; k < n; k++) if (stan[k] !== 1) { const y = (k / W) | 0; if (y < gy0) gy0 = y; if (y > gy1) gy1 = y; }
+    const yCien = gy0 + (gy1 - gy0) * 0.82;
+    const szary = (k: number) => { const i = k * 4; return Math.max(p[i], p[i + 1], p[i + 2]) - Math.min(p[i], p[i + 1], p[i + 2]) < 16; };
+    const q = new Int32Array(n); let h = 0, t = 0;
+    for (let k = 0; k < n; k++) if (stan[k] === 1 && (k / W | 0) >= yCien) q[t++] = k;
+    while (h < t) {
+      const k = q[h++], x = k % W;
+      for (const kk of [x > 0 ? k - 1 : -1, x < W - 1 ? k + 1 : -1, k >= W ? k - W : -1, k < n - W ? k + W : -1]) {
+        if (kk < 0 || stan[kk] === 1 || (kk / W | 0) < yCien || !szary(kk)) continue;
+        stan[kk] = 1; q[t++] = kk;
+      }
+    }
+  }
   let x0 = W, y0 = H, x1 = 0, y1 = 0;
   for (let k = 0; k < n; k++) {
     const i = k * 4;

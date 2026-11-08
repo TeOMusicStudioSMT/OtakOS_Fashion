@@ -15,7 +15,7 @@ import { aureola, losowe, plotno, postac, rozlej, tekstSrodek, zawin, naszywkaPo
 export const TLO = '#0b0c10', ZLOTO = '#d4a853', KREM = '#f4f1ea';
 const PAL: Paleta = { tusz: KREM, zloto: ZLOTO, akcent: '#34d399', cien: 'rgba(212,168,83,0.30)' };
 
-export type Rysunek = 'naklejka-postac' | 'naklejka-naszywka' | 'plakat' | 'magnes' | 'zderzak' | 'etui' | 'czapka' | 'aop-glowny' | 'aop-tyl' | 'aop-pas' | 'aop-tlo';
+export type Rysunek = 'naklejka-postac' | 'naklejka-naszywka' | 'plakat' | 'magnes' | 'zderzak' | 'etui' | 'czapka' | 'aop-glowny' | 'aop-plecak' | 'aop-tyl' | 'aop-pas' | 'aop-tlo';
 export interface MiejsceDruku { placement: string; nazwa: string; w: number; h: number; rysunek: Rysunek }
 export interface WariantPF { wartosc: string; variantId: number; cenaEur: number; miejsca?: MiejsceDruku[] }
 export interface ProduktPF {
@@ -55,7 +55,7 @@ export const PRODUKTY_PF: ProduktPF[] = [
     miejsca: [m('embroidery_front_large', 'haft z przodu', 1770, 600, 'czapka')],
     warianty: rozm([['Black', 8747], ['Charcoal/ Black', 16709]], () => 34) },
   { klucz: 'aop-plecak', katalogId: 279, nazwaPrintful: 'All-Over Print Backpack', nazwa: 'All-Over Backpack', typ: 'Bags', aop: true, opcja: 'Title',
-    miejsca: [m('front', 'przód', 2175, 3075, 'aop-glowny'), m('top', 'góra', 4200, 1200, 'aop-tlo'), m('bottom', 'dół', 4200, 750, 'aop-tlo'), m('pocket', 'kieszeń', 1950, 1200, 'aop-pas')],
+    miejsca: [m('front', 'przód z kieszenią', 2175, 3075, 'aop-plecak'), m('top', 'góra', 4200, 1200, 'aop-tlo'), m('bottom', 'dół', 4200, 750, 'aop-tlo'), m('pocket', 'kieszeń', 1950, 1200, 'aop-pas')],
     warianty: [{ wartosc: 'One size', variantId: 9063, cenaEur: 89 }] },
   { klucz: 'aop-sukienka', katalogId: 896, nazwaPrintful: 'All-Over Print Slip Dress', nazwa: 'All-Over Slip Dress', typ: 'Dresses', aop: true, opcja: 'Size',
     miejsca: [m('front', 'przód', 5100, 6900, 'aop-glowny'), m('back', 'tył', 5100, 6900, 'aop-tyl')],
@@ -212,6 +212,15 @@ export function rysujPlik(r: Rysunek, W: number, H: number, mot: HTMLCanvasEleme
     const linie = zawin(g, t.opowiesc || '', W * 0.7).slice(0, Math.min(6, miejsc));
     linie.forEach((l, i) => g.fillText(l, W / 2, y0 + i * krok));
     if (t.cytat) tekstSrodek(g, `„${t.cytat}”`, W / 2, H * 0.91, `italic 400 ${k * 0.03}px Georgia, serif`, ZLOTO, 0, W * 0.86);
+    return c;
+  }
+  if (r === 'aop-plecak') {
+    // „Front & Pocket” Printful: dolna część pliku to naszyta kieszeń z zamkiem — pas ok. 52–61 % wysokości chowa się
+    // pod jej krawędzią (2026-11-08 mockup: Koralik bez nóg). Postać cała nad kieszenią, imię na kieszeni.
+    const S = Math.min(W * 0.84, H * 0.45);
+    g.drawImage(medalion(mot, ziarno, Math.round(S)), (W - S) / 2, H * 0.035, S, S);
+    tekstSrodek(g, (t.tytul || IMIE).toUpperCase(), W / 2, H * 0.76, `900 ${W * 0.1}px Cinzel, Georgia, serif`, KREM, W * 0.01, W * 0.74);
+    tekstSrodek(g, '0.00G STYLE', W / 2, H * 0.84, `600 ${W * 0.045}px Cinzel, Georgia, serif`, ZLOTO, W * 0.012, W * 0.6);
     return c;
   }
   // aop-glowny: wielka postać w aureoli na środku panelu
