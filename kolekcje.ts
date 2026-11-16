@@ -23,7 +23,17 @@ import { kontrolaStrony, pngZDpi, type WynikQc } from './kontrolaSzwalni';
 
 const uruchom = promisify(execFile);
 const OLLAMA = process.env.OTAKOS_OLLAMA || 'http://127.0.0.1:11434';
-const PUBLIC = path.join(process.cwd(), 'public');
+/**
+ * 📁 Korzeń, pod którym Szwalnia trzyma kolekcje (nadruki, strefy druku 300 DPI, produkty.csv).
+ * Domyślnie katalog repozytorium; `OTAKOS_FASHION_WYJSCIE` przenosi całość w dowolne miejsce na dysku,
+ * np. `F:\TeO_Kolekcje` → pliki lądują w `F:\TeO_Kolekcje\public\nadruki\kolekcje\<id>`.
+ *
+ * Układ `public/…` zostaje CELOWO: Katedra dokleja go sama (`StolProduktowy`, `ZebrraFashion` liczą
+ * `<katalogFashion>/public/nadruki/…`), więc spłaszczenie ścieżki zerwałoby Stół Produktowy i potok sklepu.
+ * Przenosząc wyjście, ustaw Katedrze `OTAKOS_FASHION_DIR` na ten sam katalog — wtedy cały łańcuch działa dalej.
+ */
+const KORZEN = process.env.OTAKOS_FASHION_WYJSCIE ? path.resolve(process.env.OTAKOS_FASHION_WYJSCIE) : process.cwd();
+const PUBLIC = path.join(KORZEN, 'public');
 const KAT = path.join(PUBLIC, 'nadruki', 'kolekcje');
 const ID = /^k-[0-9a-f]{8}$/;
 
