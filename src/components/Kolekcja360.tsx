@@ -6,6 +6,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Loader2, Sparkles, Download, Trash2 } from 'lucide-react';
 import { BestselleryPrintful } from './BestselleryPrintful';
+import { slugPostaci } from '../utils/bestselleryBieg';
 import { wczytajMotyw, wytnijTlo, paleta, imieZOpisu, przodPlakat, przodHerb, plecy, rekaw, doPng, naszywkaBlok, haftKursywa, plecyHaft, naszywkaPostaci, naszywkaGlowy, naszywkaSymbol, ustawJezykNapisow, type TekstKolekcji } from '../utils/kompozycja360';
 
 /** Ubiory z długim rękawem — ta sama lista co DLUGIE_REKAWY w nadruki.ts (serwer). */
@@ -155,7 +156,10 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
     if (zle.length) setBlad(zle.join(' · '));
   };
   const imie = motyw ? imieZOpisu(motyw.opis) : '';
+  // podpowiedzi adresów pokazują TĘ postać, nie zaszytego „borowika” (2026-11-19: Suweren czytał to
+  // jako katalog docelowy wszystkich kolekcji i szukał błędu tam, gdzie go nie było)
   const imieSklepu = imie.charAt(0) + imie.slice(1).toLowerCase();
+  const slugSklepu = slugPostaci(imieSklepu || imie || 'postac');
   const moje = kolekcje.filter((k) => k.stan === 'gotowa' && k.obraz === motyw?.id);
   const ostatniaNaModel = Object.values(Object.fromEntries([...moje].reverse().map((k) => [k.ubior, k]))) as Kolekcja[];
   /** ↻ Najnowsza kolekcja każdego modelu jeszcze raz — te same opowieści, napis blokowy i sentencja z formularza (np. po zmianie marki). */
@@ -275,10 +279,10 @@ export function Kolekcja360({ motyw, ubiory, kolory }: { motyw: Motyw | null; ub
           <b>🛍️ Pakiet do Shopify — {imieSklepu} ({ostatniaNaModel.length} produktów: najnowsza kolekcja każdego modelu; produkty wchodzą jako SZKICE)</b>
           <div className="flex flex-wrap gap-2">{ostatniaNaModel.map((k) => <label key={k.ubior}>{ubiory[k.ubior]?.nazwa ?? k.ubior}<br /><input value={ceny[k.ubior] ?? ''} onChange={(e) => setCeny({ ...ceny, [k.ubior]: e.target.value })} placeholder="cena" className="w-20 rounded bg-black/40 px-2 py-1" /></label>)}
             <label>Waluta<br /><input value={waluta} onChange={(e) => setWaluta(e.target.value.toUpperCase().slice(0, 3))} className="w-14 rounded bg-black/40 px-2 py-1" /></label></div>
-          <label className="block">Publiczny adres zdjęć (https, opcjonalnie — bez niego zdjęcia dodasz w panelu Shopify)<br /><input value={bazaObrazow} onChange={(e) => setBazaObrazow(e.target.value)} placeholder="https://…/nadruki/sklep/borowik" className="w-full rounded bg-black/40 px-2 py-1" /></label>
+          <label className="block">Publiczny adres zdjęć (https, opcjonalnie — bez niego zdjęcia dodasz w panelu Shopify)<br /><input value={bazaObrazow} onChange={(e) => setBazaObrazow(e.target.value)} placeholder={`https://…/nadruki/sklep/${slugSklepu}`} className="w-full rounded bg-black/40 px-2 py-1" /></label>
           <button onClick={() => void zrobPakiet()} disabled={!!praca} className="rounded border px-3 py-1 disabled:opacity-40" style={{ borderColor: themeConfig.hex }}>📦 Złóż pakiet (CSV + makiety + pliki druku)</button>
           {pakiet && <p>✓ {pakiet.produktow} produktów · <a href={pakiet.csv} download className="underline">produkty.csv</a> · katalog <code>public{pakiet.katalog}</code> (CZYTAJ.txt w środku)</p>}
-          <label className="block">Link kolekcji w sklepie (po imporcie w Shopify) — trafi do opisów filmów YouTube z {imieSklepu}<br /><span className="flex gap-2"><input value={linkSklepu} onChange={(e) => setLinkSklepu(e.target.value)} placeholder="https://twoj-sklep.myshopify.com/collections/borowik" className="flex-1 rounded bg-black/40 px-2 py-1" /><button onClick={() => void zapiszLink()} className="rounded border px-3 py-1" style={{ borderColor: themeConfig.hex }}>🔗 Zapisz w Katedrze</button></span></label>
+          <label className="block">Link kolekcji w sklepie (po imporcie w Shopify) — trafi do opisów filmów YouTube z {imieSklepu}<br /><span className="flex gap-2"><input value={linkSklepu} onChange={(e) => setLinkSklepu(e.target.value)} placeholder={`https://twoj-sklep.myshopify.com/collections/${slugSklepu}`} className="flex-1 rounded bg-black/40 px-2 py-1" /><button onClick={() => void zapiszLink()} className="rounded border px-3 py-1" style={{ borderColor: themeConfig.hex }}>🔗 Zapisz w Katedrze</button></span></label>
         </div>}
         {ostatniaNaModel.length > 0 && <BestselleryPrintful imie={imieSklepu} wyciety={wyciety} kolor={kolor} obraz={motyw.id} kolekcja={ostatniaNaModel[0]?.id ?? null}
           tekst={{ ...(ostatniaNaModel.find((k) => k.tekst?.opowiesc)?.tekst ?? tekst), tytul: imieSklepu }}

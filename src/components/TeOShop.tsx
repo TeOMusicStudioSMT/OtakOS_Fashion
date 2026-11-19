@@ -13,6 +13,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Download, FileSpreadsheet, Loader2, RefreshCw, ShoppingBag } from 'lucide-react';
 import { wczytajMotyw, wytnijTlo } from '../utils/kompozycja360';
+import { barwaZId } from '../utils/bestsellery';
+import { biegBestsellerow } from '../utils/bestselleryBieg';
 import {
     rysujNadruk, rysujPodgladAop, zbudujNadruk, zbudujPodglad, zbudujPanelAop, zbudujPodgladAop, zlozPostacie,
     type PanelDruku, type Uklad,
@@ -20,7 +22,7 @@ import {
 
 type Linia = 'A' | 'B' | 'C' | 'D';
 interface Postac {
-    id: string; nazwa: string; rola: string;
+    id: string; nazwa: string; rola: string; opisEn?: string; cytatEn?: string;
     tolerancja?: number; cien?: boolean; wymaz?: { x0: number; y0: number; x1: number; y1: number };
 }
 interface Aop { katalogId: number; nazwaPrintful: string; panele: PanelDruku[] }
@@ -175,11 +177,54 @@ export const TeOShop: React.FC = () => {
         finally { setPracuje(false); }
     };
 
+    /**
+     * 🖨 Bestsellery Printful dla KAŻDEJ postaci linii — tylko All-Over Print.
+     *
+     * Suweren 2026-11-19: „tych produktów z zapasami jeszcze nie mamy… na razie tylko AOP".
+     * Reszta katalogu Printful (naklejki, plakaty, magnesy, etui, czapka) czeka, aż marka urośnie
+     * na tyle, żeby pracować z własnymi producentami.
+     *
+     * Ten przebieg pisze manifest, którego szuka `/api/printful/synchronizuj` w moście: to on wiąże
+     * SKU wariantu Shopify z `variantId` katalogu drukarni i wysyła pliki druku. Bez manifestu
+     * synchronizacja nie ma czego dopasować i każdy wariant zostaje „not synced".
+     */
+    const bestsellery = async () => {
+        if (!stan) return;
+        setPracuje(true); setBlad(''); setPostep(''); przerwij.current = false;
+        // ta sama postać bywa w kilku produktach linii — rysujemy ją RAZ
+        const lista: { p: Postac; linia: Linia }[] = [];
+        for (const l of LINIE) {
+            if (!linie.includes(l)) continue;
+            for (const p of stan.linie[l].postacie) if (!lista.some((x) => x.p.id === p.id)) lista.push({ p, linia: l });
+        }
+        let plikow = 0, zrobionych = 0;
+        try {
+            for (const [i, { p, linia }] of lista.entries()) {
+                if (przerwij.current) { setPostep(`⏸ przerwane po ${i} postaciach (${plikow} plików).`); break; }
+                setPostep(`${i + 1}/${lista.length} · ${p.nazwa} — wycinam postać…`);
+                const m = await motyw([p]);
+                if (!m) throw new Error(`${p.nazwa}: obraz z Pracowni się nie wczytał (${p.id}).`);
+                const L = stan.linie[linia];
+                const b = await biegBestsellerow({
+                    imie: p.nazwa, wyciety: m, tylkoAop: true, barwa: barwaZId(idKoloru(L.kolorystyka)),
+                    tekst: { tytul: p.nazwa, podtytul: L.nazwa, opowiesc: p.opisEn ?? p.rola, cytat: p.cytatEn ?? '' },
+                    kolekcja: L.nazwa, postep: setPostep,
+                });
+                plikow += b.plikow; zrobionych++;
+                if (b.dokladnych < b.wszystkich) setBlad(`⚠ ${p.nazwa}: wymiary z Printful tylko dla ${b.dokladnych}/${b.wszystkich} produktów — reszta orientacyjna.`);
+            }
+            setPostep(`✓ Bestsellery AOP: ${zrobionych} postaci, ${plikow} plików druku → public/nadruki/bestsellery/ i sklep-shopify/<postać>/3-BESTSELLERY-PRINTFUL-I-ALL-OVER.`);
+            await odswiez();
+        } catch (e) { setBlad(String((e as Error).message ?? e)); setPostep(''); }
+        finally { setPracuje(false); }
+    };
+
     if (blad && !stan) return <div className="p-8 text-rose-300">⚠ {blad}</div>;
     if (!stan) return <div className="flex items-center gap-2 p-8 text-neutral-400"><Loader2 className="h-4 w-4 animate-spin" /> Czytam kolekcję…</div>;
 
     const gotowych = stan.produkty.filter((p) => p.gotowy).length;
     const plikowRazem = doKolejki.reduce((s, p) => s + p.plikow, 0);
+    const postaciLinii = new Set(LINIE.filter((l) => linie.includes(l)).flatMap((l) => stan.linie[l].postacie.map((p) => p.id))).size;
     return (
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
             <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -193,10 +238,16 @@ export const TeOShop: React.FC = () => {
                     <button onClick={() => void odswiez()} disabled={pracuje} className="rounded-lg border border-white/15 px-3 py-2 text-sm text-neutral-300 hover:bg-white/5 disabled:opacity-40"><RefreshCw className="mr-1 inline h-4 w-4" /> Odśwież</button>
                     {pracuje
                         ? <button onClick={() => { przerwij.current = true; }} className="rounded-lg border border-amber-400/50 px-4 py-2.5 text-sm font-bold text-amber-200 hover:bg-amber-400/10">⏸ Przerwij po bieżącym</button>
-                        : <button onClick={() => void generuj()} disabled={!doKolejki.length}
-                            className="rounded-lg bg-[#00ff66] px-5 py-2.5 text-sm font-black text-black hover:bg-[#4dff8f] disabled:opacity-40">
-                            <Download className="mr-1 inline h-4 w-4" /> Generuj {doKolejki.length} produktów ({plikowRazem} plików) + CSV
-                        </button>}
+                        : <>
+                            <button onClick={() => void generuj()} disabled={!doKolejki.length}
+                                className="rounded-lg bg-[#00ff66] px-5 py-2.5 text-sm font-black text-black hover:bg-[#4dff8f] disabled:opacity-40">
+                                <Download className="mr-1 inline h-4 w-4" /> Generuj {doKolejki.length} produktów ({plikowRazem} plików) + CSV
+                            </button>
+                            <button onClick={() => void bestsellery()} title="Komplet paneli All-Over Print każdej postaci + manifest dla synchronizacji Printful"
+                                className="rounded-lg border border-indigo-400/60 px-4 py-2.5 text-sm font-bold text-indigo-200 hover:bg-indigo-400/10">
+                                🖨 Bestsellery Printful (AOP) — {postaciLinii} postaci
+                            </button>
+                        </>}
                 </div>
             </div>
             <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-white/10 bg-white/[0.02] px-4 py-2.5 text-xs text-neutral-300">

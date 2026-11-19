@@ -7,10 +7,8 @@
 import React, { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { doPng, type TekstKolekcji } from '../utils/kompozycja360';
-import { PRODUKTY_PF, miejscaWariantu, nazwaPliku, rysujPlik, logoKwadrat, logoPoziome, baner, TLO, type MiejsceDruku, type ProduktPF, type WariantPF } from '../utils/bestsellery';
-
-const slug = (s: string) => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'kolekcja';
-interface Printfiles { success: boolean; message?: string; printfiles?: { printfile_id: number; width: number; height: number; can_rotate?: boolean }[]; warianty?: Record<string, Record<string, number>> }
+import { PRODUKTY_PF, logoKwadrat, logoPoziome, baner, TLO } from '../utils/bestsellery';
+import { biegBestsellerow, slugPostaci } from '../utils/bestselleryBieg';
 
 async function wyslijPng(adres: string, c: HTMLCanvasElement) {
   const r = await fetch(adres, { method: 'POST', headers: { 'Content-Type': 'image/png' }, body: await doPng(c) });
@@ -19,27 +17,12 @@ async function wyslijPng(adres: string, c: HTMLCanvasElement) {
 }
 const wczytajObraz = (src: string) => new Promise<HTMLImageElement>((ok, nie) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => nie(new Error(`nie wczytał się ${src}`)); i.src = src; });
 
-/** Miejsca wariantu w rozmiarach z Printful (gdy przyszły); miejsca, których Printful dla wariantu nie ma, odpadają. */
-function miejscaZPrintful(p: ProduktPF, w: WariantPF, pf: Printfiles | null): { miejsca: MiejsceDruku[]; zrodlo: 'printful' | 'orientacyjne' } {
-  const baza = miejscaWariantu(p, w);
-  const mapa = pf?.success ? pf.warianty?.[String(w.variantId)] : null;
-  if (!mapa) return { miejsca: baza, zrodlo: 'orientacyjne' };
-  const out: MiejsceDruku[] = [];
-  for (const mi of baza) {
-    const id = mapa[mi.placement]; const f = pf!.printfiles?.find((x) => x.printfile_id === id);
-    // plakat/canvas 18×24″ Printful podaje poziomo (7200×5400, can_rotate) — projekt pionowy dostaje ten sam szablon obrócony
-    const obroc = f && f.can_rotate && (mi.w > mi.h) !== (f.width > f.height);
-    if (f) out.push({ ...mi, w: obroc ? f.height : f.width, h: obroc ? f.width : f.height });
-  }
-  return { miejsca: out.length ? out : baza, zrodlo: out.length ? 'printful' : 'orientacyjne' };
-}
-
 export function BestselleryPrintful({ imie, wyciety, tekst, makiety, kolekcja, kolor, obraz }: { obraz?: string; imie: string; wyciety: HTMLCanvasElement | null; tekst: TekstKolekcji; makiety: string[]; kolekcja: string | null; kolor: string }) {
   const [wybrane, setWybrane] = useState<string[]>(PRODUKTY_PF.map((p) => p.klucz));
   const [praca, setPraca] = useState('');
   const [wynik, setWynik] = useState('');
   const [blad, setBlad] = useState('');
-  const postac = slug(imie);
+  const postac = slugPostaci(imie);
 
   const czcionki = () => Promise.all(['900 40px Cinzel', '700 40px Cinzel', '40px Graduate', '500 20px "JetBrains Mono"', '400 20px "Plus Jakarta Sans"'].map((f) => document.fonts.load(f).catch(() => null)));
 
@@ -58,39 +41,9 @@ export function BestselleryPrintful({ imie, wyciety, tekst, makiety, kolekcja, k
           if (r.ok && d.tekst?.opowiesc) t = { ...d.tekst, ...Object.fromEntries(Object.entries(tekst).filter(([, v]) => String(v ?? '').trim())), opowiesc: d.tekst.opowiesc, cytat: tekst.cytat || d.tekst.cytat, tytul: imie };
         } catch { /* bez opowieści — plakat bez karty */ }
       }
-      const zrodloWymiarow: Record<string, string> = {}, produkty: unknown[] = [];
-      let plikow = 0;
-      for (const p of PRODUKTY_PF.filter((x) => wybrane.includes(x.klucz))) {
-        setPraca(`${p.nazwa}: wymiary szablonu…`);
-        const pf: Printfiles | null = await fetch(`/api/nadruki/printful/printfiles/${p.katalogId}`).then((r) => r.json()).catch(() => null);
-        const gotowe = new Set<string>();
-        const warianty = [];
-        let zrodlo: 'printful' | 'orientacyjne' = 'orientacyjne';
-        for (const w of p.warianty) {
-          const mz = miejscaZPrintful(p, w, pf); zrodlo = mz.zrodlo;
-          const pliki: Record<string, string> = {};
-          for (const mi of mz.miejsca) {
-            const nazwa = nazwaPliku(mi);
-            if (!gotowe.has(nazwa)) {
-              setPraca(`${p.nazwa} · ${mi.nazwa} (${mi.w}×${mi.h})…`);
-              await new Promise((r) => setTimeout(r, 0));
-              const c = rysujPlik(mi.rysunek, mi.w, mi.h, wyciety, t, imie, `${postac}-${p.klucz}-${mi.placement}`);
-              await wyslijPng(`/api/nadruki/bestsellery/${postac}/plik?produkt=${p.klucz}&nazwa=${encodeURIComponent(nazwa)}`, c);
-              gotowe.add(nazwa); plikow++;
-            }
-            pliki[mi.placement] = `${p.klucz}/${nazwa}`;
-          }
-          warianty.push({ wartosc: w.wartosc, variantId: w.variantId, cenaEur: w.cenaEur, sku: `${postac}-${p.klucz}-${w.wartosc}`.toUpperCase().normalize('NFD').replace(/[^A-Z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80), pliki });
-        }
-        zrodloWymiarow[String(p.katalogId)] = zrodlo;
-        produkty.push({ klucz: p.klucz, katalogId: p.katalogId, nazwaPrintful: p.nazwaPrintful, tytul: `${imie} — ${p.nazwa} · 0.00G Style`, typ: p.typ, aop: p.aop, opcja: p.opcja, uwaga: p.uwaga, warianty });
-      }
-      setPraca('Manifest i kopia do Stołu Produktowego…');
-      const r = await fetch(`/api/nadruki/bestsellery/${postac}/manifest`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imie, kolekcja, zrodloWymiarow, produkty }) });
-      const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error ?? `HTTP ${r.status}`);
-      const dokladne = Object.values(zrodloWymiarow).filter((z) => z === 'printful').length;
-      setWynik(`${produkty.length} produktów, ${plikow} plików → public/nadruki/bestsellery/${postac}/ · wymiary z Printful: ${dokladne}/${Object.keys(zrodloWymiarow).length} produktów katalogu${dokladne < Object.keys(zrodloWymiarow).length ? ' (reszta orientacyjna — wklej token Printful w Stole Produktowym i narysuj ponownie)' : ''}${d.most?.success === false || d.most?.blad ? ` · ⚠ most: ${d.most.message ?? d.most.blad}` : d.most?.bestsellery ? ` · most skopiował do sklep-shopify/${postac}/3-BESTSELLERY-PRINTFUL-I-ALL-OVER` : ' · ⚠ most nie zna jeszcze bestsellerów (stara wersja) — po restarcie mostu skopiuje je przy najbliższej synchronizacji'}`);
+      const b = await biegBestsellerow({ imie, wyciety, tekst: t, kolekcja, klucze: wybrane, postep: setPraca });
+      const most = b.most as { success?: boolean; blad?: string; message?: string; bestsellery?: unknown } | undefined;
+      setWynik(`${b.produktow} produktów, ${b.plikow} plików → public/nadruki/bestsellery/${b.postac}/ · wymiary z Printful: ${b.dokladnych}/${b.wszystkich} produktów katalogu${b.dokladnych < b.wszystkich ? ' (reszta orientacyjna — wklej token Printful w Stole Produktowym i narysuj ponownie)' : ''}${most?.success === false || most?.blad ? ` · ⚠ most: ${most.message ?? most.blad}` : most?.bestsellery ? ` · most skopiował do sklep-shopify/${b.postac}/3-BESTSELLERY-PRINTFUL-I-ALL-OVER` : ' · ⚠ most nie zna jeszcze bestsellerów (stara wersja) — po restarcie mostu skopiuje je przy najbliższej synchronizacji'}`);
     } catch (e) { setBlad((e as Error).message); }
     setPraca('');
   };

@@ -76,26 +76,49 @@ export const idKolorystyki = (nazwa: string) => KOLORYSTYKI.find((k) => k.nazwa 
  */
 export interface Postac {
     id: string; nazwa: string; rola: string;
+    /** Opowieść na TYŁ panelu All-Over Print. Po angielsku — kupujący jest globalny, a karta jedzie do Printful. */
+    opisEn?: string;
+    /** Jedna linijka kursywą pod opowieścią. */
+    cytatEn?: string;
     tolerancja?: number; cien?: boolean;
     wymaz?: { x0: number; y0: number; x1: number; y1: number };
 }
-const P_FIOLEK: Postac = { id: 'mini-teogochi-mini-fiolek-cialo-z-szrono-538c', nazwa: 'Mini-Fiołek', rola: 'Koci Kwiat — płatki szronu w fiolecie i błękicie' };
-const P_PECHERZIK: Postac = { id: 'mini-teogochi-pecherzik-wariant-purpurow-a1bd', nazwa: 'Pęcherzik', rola: 'Purpurowy Puch — puchaty przytulak' };
-const P_KAEL: Postac = { id: 'mini-teogochi-czulkowiec-kozaczek-z-czul-e533', nazwa: 'Czułkowiec (Kael)', rola: 'Królewicz w złotej koronie, rubin na piersi' };
-const P_ELARA: Postac = { id: 'mini-teogochi-plochuszkowy-ma-przezroczy-423e', nazwa: 'Płochuszkowy (Elara)', rola: 'Dziewczynka z lampionem na czubku głowy' };
-const P_LAMPION: Postac = { id: 'mini-teogochi-lampion-spiewak-zgaszla-sz-bdf4', nazwa: 'Lampion-Śpiewak', rola: 'Lampa naftowa — symbol nocny' };
-const P_ZOLEDZIK: Postac = { id: 'mini-teogochi-zoledzik-ma-male-barylkowa-cacf', nazwa: 'Żołędzik', rola: 'Żołądź ze słońcem w środku' };
-const P_DMUCHAWIEC: Postac = { id: 'mini-teogochi-wiotki-stworek-ze-sprezyst-32ed', nazwa: 'Wiotki Dmuchawiec', rola: 'Złoty dmuchawiec na sprężystej łodydze' };
+const P_FIOLEK: Postac = { id: 'mini-teogochi-mini-fiolek-cialo-z-szrono-538c', nazwa: 'Mini-Fiołek', rola: 'Koci Kwiat — płatki szronu w fiolecie i błękicie',
+    opisEn: "A cat-flower of frosted petals, violet into blue. Where it passes, the air remembers spring.", cytatEn: "Spirit is present.",
+};
+const P_PECHERZIK: Postac = { id: 'mini-teogochi-pecherzik-wariant-purpurow-a1bd', nazwa: 'Pęcherzik', rola: 'Purpurowy Puch — puchaty przytulak',
+    opisEn: "Purple down, made for holding. Small enough to carry, warm enough to matter.", cytatEn: "Energy serves the master.",
+};
+const P_KAEL: Postac = { id: 'mini-teogochi-czulkowiec-kozaczek-z-czul-e533', nazwa: 'Czułkowiec (Kael)', rola: 'Królewicz w złotej koronie, rubin na piersi',
+    opisEn: "The prince in the golden crown. Lace at his shoulders, a ruby kept over the heart.", cytatEn: "Amber light on your skin.",
+};
+const P_ELARA: Postac = { id: 'mini-teogochi-plochuszkowy-ma-przezroczy-423e', nazwa: 'Płochuszkowy (Elara)', rola: 'Dziewczynka z lampionem na czubku głowy',
+    opisEn: "She wears a lantern where a crown would sit. The dark never quite closes behind her.", cytatEn: "Closer than gravity.",
+};
+const P_LAMPION: Postac = { id: 'mini-teogochi-lampion-spiewak-zgaszla-sz-bdf4', nazwa: 'Lampion-Śpiewak', rola: 'Lampa naftowa — symbol nocny',
+    opisEn: "An oil lamp standing on two legs. It sings only after every other light has gone out.", cytatEn: "Silence is but a song waiting for a string.",
+};
+const P_ZOLEDZIK: Postac = { id: 'mini-teogochi-zoledzik-ma-male-barylkowa-cacf', nazwa: 'Żołędzik', rola: 'Żołądź ze słońcem w środku',
+    opisEn: "An acorn with a sun inside. Oak bark without, a small summer within.", cytatEn: "Solar Pulse.",
+};
+const P_DMUCHAWIEC: Postac = { id: 'mini-teogochi-wiotki-stworek-ze-sprezyst-32ed', nazwa: 'Wiotki Dmuchawiec', rola: 'Złoty dmuchawiec na sprężystej łodydze',
+    opisEn: "A golden seed-head on a springing stem. One breath and the whole story scatters.", cytatEn: "Drive more, think less.",
+};
 const P_PUDERCIEL: Postac = {
     id: 'mini-teogochi-puderciel-snieg-puchaty-ma-8e07', nazwa: 'Puderciel-Śnieg', rola: 'Biała chmurka z gwiazdką',
-    tolerancja: 14, cien: false, wymaz: { x0: 0, y0: 0.84, x1: 0.30, y1: 1 },   // nogi zaczynają się dopiero od x ≈ 0,31
+    tolerancja: 14, cien: false, wymaz: { x0: 0, y0: 0.84, x1: 0.30, y1: 1 },   // nogi zaczynają się dopiero od x ≈ 0,31,
+    opisEn: "A white cloud that learned to stand. Soft as first snow, quiet as the hour before it.", cytatEn: "What has not died.",
 };
-const P_GWIEZDNIK: Postac = { id: 'mini-teogochi-gwiezdnik-promieniscie-swi-afae', nazwa: 'Gwiezdnik', rola: 'Szmaragdowo-fioletowy kryształ ze złotymi konstelacjami' };
+const P_GWIEZDNIK: Postac = { id: 'mini-teogochi-gwiezdnik-promieniscie-swi-afae', nazwa: 'Gwiezdnik', rola: 'Szmaragdowo-fioletowy kryształ ze złotymi konstelacjami',
+    opisEn: "Emerald and violet crystal, gold constellations under the facets. A sky folded small enough to hold.", cytatEn: "Infinite consciousness.",
+};
 /**
  * 🎸 Postać UKRYTA Boxu 03 — jedyna narysowana pod tę kolekcję (FLUX, 2026-11-19), reszta już była w Pracowni.
  * Wersja z gitarą idzie na druk; bliźniaczka w A-pozie (`…dziewczynka-bard-4ea2`) została jako karta pod rzeźbę 3D.
  */
-const P_HIDENGIRL: Postac = { id: 'mini-teogochi-hidengirl-z-gitara-dziewcz-5a1a', nazwa: 'HidenGirl', rola: 'Postać ukryta Boxu 03 — gitara w chmurkach, karminowy tiul, kryształowe kowbojki' };
+const P_HIDENGIRL: Postac = { id: 'mini-teogochi-hidengirl-z-gitara-dziewcz-5a1a', nazwa: 'HidenGirl', rola: 'Postać ukryta Boxu 03 — gitara w chmurkach, karminowy tiul, kryształowe kowbojki',
+    opisEn: "She carries the weight of the firmament upon a body of pale blue wood. Each strum releases a fragment of a forgotten hymn, drifting like white clouds across the veil of reality.", cytatEn: "Melodies carved in pale clouds.",
+};
 
 export const LINIE: Record<Linia, { nazwa: string; postacie: Postac[]; kolorystyka: string }> = {
     A: { nazwa: '0.00G NEW ENERGY ORIGINALS', postacie: [P_FIOLEK, P_PECHERZIK], kolorystyka: 'Cosmic Indigo' },
