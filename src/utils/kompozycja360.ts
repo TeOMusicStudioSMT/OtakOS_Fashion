@@ -34,7 +34,13 @@ export async function wczytajMotyw(id: string): Promise<HTMLImageElement> {
  * Tylko tło POŁĄCZONE z brzegiem obrazka (wypełnianie od krawędzi) — 2026-11-07 Koralik z białym brzuszkiem
  * na białym tle dostawał dziurę w brzuchu, bo znikał każdy piksel w kolorze tła.
  */
-export function wytnijTlo(img: HTMLImageElement, tolerancja = 46): HTMLCanvasElement {
+export interface OpcjeWycinania {
+  /** `false` wyłącza usuwanie cienia z podłogi — dla postaci, których ciało samo jest białe/szare. */
+  cien?: boolean;
+  /** Prostokąt (ułamki 0–1) wymazywany PRZED przycięciem do treści: resztka cienia, której barwa nie odróżnia się od postaci. */
+  wymaz?: { x0: number; y0: number; x1: number; y1: number };
+}
+export function wytnijTlo(img: HTMLImageElement, tolerancja = 46, opcje: OpcjeWycinania = {}): HTMLCanvasElement {
   const c = plotno(img.naturalWidth, img.naturalHeight), g = c.getContext('2d')!;
   g.drawImage(img, 0, 0);
   const d = g.getImageData(0, 0, c.width, c.height), p = d.data;
@@ -85,20 +91,34 @@ export function wytnijTlo(img: HTMLImageElement, tolerancja = 46): HTMLCanvasEle
   for (let k = 0; k < n; k++) if (stan[k] === 4) stan[k] = 0;
   // Cień na podłodze (2026-11-08: szare skrawki pod stopami świeciły bielą na ciemnym plecaku): w dolnych 18 % postaci
   // tło rozlewa się dalej przez SZARE piksele (bez barwy, max−min kanałów < 16) — stopy mają kolor, cień nie.
-  {
+  //
+  // ⚠️ Z OGRANICZONYM ZASIĘGIEM (2026-11-19). Biały, puchaty stworek (Puderciel-Śnieg) JEST szary w tym sensie
+  // — max−min jego futra też jest < 16 — więc rozlewanie bez hamulca weszło mu od dołu w ciało i wygryzło bok.
+  // Cień to wąski rąbek przy podłodze, nie pół obrazka: pozwalamy mu urosnąć o `ZASIEG` pikseli od tła i ani piksela dalej.
+  if (opcje.cien !== false) {
     let gy0 = H, gy1 = 0;
     for (let k = 0; k < n; k++) if (stan[k] !== 1) { const y = (k / W) | 0; if (y < gy0) gy0 = y; if (y > gy1) gy1 = y; }
     const yCien = gy0 + (gy1 - gy0) * 0.82;
+    const ZASIEG = Math.max(6, Math.round(Math.max(W, H) * 0.03));
     const szary = (k: number) => { const i = k * 4; return Math.max(p[i], p[i + 1], p[i + 2]) - Math.min(p[i], p[i + 1], p[i + 2]) < 16; };
-    const q = new Int32Array(n); let h = 0, t = 0;
+    const q = new Int32Array(n), glebokosc = new Int32Array(n); let h = 0, t = 0;
     for (let k = 0; k < n; k++) if (stan[k] === 1 && (k / W | 0) >= yCien) q[t++] = k;
     while (h < t) {
-      const k = q[h++], x = k % W;
+      const k = q[h++], x = k % W, d2 = glebokosc[k];
+      if (d2 >= ZASIEG) continue;
       for (const kk of [x > 0 ? k - 1 : -1, x < W - 1 ? k + 1 : -1, k >= W ? k - W : -1, k < n - W ? k + W : -1]) {
         if (kk < 0 || stan[kk] === 1 || (kk / W | 0) < yCien || !szary(kk)) continue;
-        stan[kk] = 1; q[t++] = kk;
+        stan[kk] = 1; glebokosc[kk] = d2 + 1; q[t++] = kk;
       }
     }
+  }
+  // Wymaz: resztka cienia, która ma DOKŁADNIE tę samą barwę co postać (biały stworek — zmierzone 2026-11-19:
+  // cień 240,241,244 vs futro 239–248). Żadna heurystyka ich nie rozdzieli, więc mówimy wprost, gdzie leży.
+  if (opcje.wymaz) {
+    const { x0: wx0, y0: wy0, x1: wx1, y1: wy1 } = opcje.wymaz;
+    const ax0 = Math.max(0, Math.round(wx0 * W)), ax1 = Math.min(W, Math.round(wx1 * W));
+    const ay0 = Math.max(0, Math.round(wy0 * H)), ay1 = Math.min(H, Math.round(wy1 * H));
+    for (let y = ay0; y < ay1; y++) for (let x = ax0; x < ax1; x++) stan[y * W + x] = 1;
   }
   let x0 = W, y0 = H, x1 = 0, y1 = 0;
   for (let k = 0; k < n; k++) {

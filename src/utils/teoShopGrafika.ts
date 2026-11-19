@@ -8,9 +8,40 @@
  * zniknie — to świadomy wybór jednej wersji na produkt, nie przeoczenie; wersja pod jasne tkaniny
  * to zamiana dwóch kolorów w `TUSZ`.
  */
+import { rysujPlik, barwaZId, type Rysunek } from './bestsellery';
+
 export type Uklad = 'stempel' | 'fala' | 'box';
 export interface FormatDruku { w: number; h: number }
 export interface TekstyDruku { napis: string; podpis: string }
+
+/**
+ * 🐾 Postać (albo duet) z Pracowni nad typografią. Rysunek przychodzi już wycięty z tła
+ * (`wytnijTlo`), więc kładzie się na tkaninie tak samo jak litery.
+ */
+function motywWPasie(c: CanvasRenderingContext2D, m: HTMLCanvasElement, W: number, y0: number, y1: number) {
+    const pole = { w: W * 0.74, h: y1 - y0 };
+    const s = Math.min(pole.w / m.width, pole.h / m.height);
+    c.save(); (c as unknown as { imageSmoothingQuality: string }).imageSmoothingQuality = 'high';
+    c.drawImage(m, W / 2 - (m.width * s) / 2, y1 - m.height * s, m.width * s, m.height * s);
+    c.restore();
+}
+
+/** Składa jedną albo dwie postacie w jeden rysunek — duet staje obok siebie, równo na dolnej linii. */
+export function zlozPostacie(obrazy: HTMLCanvasElement[]): HTMLCanvasElement | null {
+    const lista = obrazy.filter((o) => o && o.width > 0 && o.height > 0);
+    if (!lista.length) return null;
+    if (lista.length === 1) return lista[0];
+    const H = Math.max(...lista.map((o) => o.height));
+    const skale = lista.map((o) => H / o.height);
+    const przerwa = H * 0.04;
+    const W = lista.reduce((s, o, i) => s + o.width * skale[i], 0) + przerwa * (lista.length - 1);
+    const c = document.createElement('canvas'); c.width = Math.round(W); c.height = Math.round(H);
+    const g = c.getContext('2d')!;
+    (g as unknown as { imageSmoothingQuality: string }).imageSmoothingQuality = 'high';
+    let x = 0;
+    lista.forEach((o, i) => { const w = o.width * skale[i]; g.drawImage(o, x, 0, w, H); x += w + przerwa; });
+    return c;
+}
 
 export const TUSZ = { glowny: '#f4efe4', zloto: '#e6c47c', cien: 'rgba(230,180,90,0.55)' };
 const SZERYF = '"Cinzel", "Cormorant Garamond", Georgia, serif';
@@ -51,13 +82,16 @@ function fala(c: CanvasRenderingContext2D, x0: number, x1: number, y: number, wy
 }
 
 /** Rysuje gotowy plik produkcyjny. Czysta funkcja — ten sam produkt daje zawsze ten sam obraz. */
-export function rysujNadruk(c: CanvasRenderingContext2D, uklad: Uklad, f: FormatDruku, t: TekstyDruku, czysc = true) {
+export function rysujNadruk(c: CanvasRenderingContext2D, uklad: Uklad, f: FormatDruku, t: TekstyDruku, czysc = true, motyw: HTMLCanvasElement | null = null) {
     const { w: W, h: H } = f;
     // NIE zerujemy transformacji: podgląd rysuje ten sam układ na mniejszym płótnie przez `setTransform(skala…)`,
     // a reset kazałby mu rysować w skali 4500 px — i cały nadruk lądował poza kadrem.
     // `czysc: false` dla podglądu sklepowego — tam nadruk siada NA ciemnym tle i czyszczenie zjadłoby je pod spodem.
     c.save(); if (czysc) c.clearRect(0, 0, W, H);   // przezroczyste tło pod DTG / winyl
     const sx = W / 2, maxSzer = W * 0.82;
+    // Postać stoi NAD napisem; przy „stempel” typografia schodzi niżej, żeby nie wchodzić jej na nogi.
+    if (motyw) motywWPasie(c, motyw, W, H * (uklad === 'stempel' ? 0.07 : 0.03), H * (uklad === 'stempel' ? 0.40 : 0.26));
+    const srodekStempla = motyw ? 0.58 : 0.46;
 
     if (uklad === 'fala') {
         const naglowek = Math.round(W * 0.028);
@@ -82,7 +116,7 @@ export function rysujNadruk(c: CanvasRenderingContext2D, uklad: Uklad, f: Format
         napis(c, '0.00G', sx, y + H * 0.085, `300 ${Math.round(W * 0.07)}px ${PROSTY}`, TUSZ.zloto, W * 0.004);
     } else {
         const { linie: ls, px } = linie(c, t.napis, maxSzer, (p) => `700 ${p}px ${SZERYF}`, Math.round(W * 0.155));
-        const y0 = H * 0.46 - ((ls.length - 1) * px * 1.08) / 2;
+        const y0 = H * srodekStempla - ((ls.length - 1) * px * 1.08) / 2;
         ls.forEach((l, i) => napis(c, l, sx, y0 + i * px * 1.08, `700 ${px}px ${SZERYF}`, TUSZ.glowny, px * 0.015));
         const y = y0 + ls.length * px * 1.08 + H * 0.012;
         c.fillStyle = TUSZ.zloto; c.fillRect(sx - maxSzer * 0.16, y, maxSzer * 0.32, Math.max(2, Math.round(H / 1000)));
@@ -102,7 +136,7 @@ export const PODGLAD = { w: 1200, h: 1440 };
  * i dopasowuje go do stałego kadru 1200×1440, żeby siatka sklepu była równa niezależnie od tego,
  * czy produkt jest koszulką 4500×5400, naklejką 3000×3000 czy plakatem 5400×7200.
  */
-export function rysujPodglad(c: CanvasRenderingContext2D, uklad: Uklad, f: FormatDruku, t: TekstyDruku) {
+export function rysujPodglad(c: CanvasRenderingContext2D, uklad: Uklad, f: FormatDruku, t: TekstyDruku, motyw: HTMLCanvasElement | null = null) {
     const { w: W, h: H } = PODGLAD;
     c.save(); c.clearRect(0, 0, W, H);
     // Tło PŁASKIE, nie gradientowe — i to nie jest oszczędzanie na wyglądzie. Gładki gradient na
@@ -116,27 +150,80 @@ export function rysujPodglad(c: CanvasRenderingContext2D, uklad: Uklad, f: Forma
     c.save();
     c.translate((W - f.w * s) / 2, (H - f.h * s) / 2);
     c.scale(s, s);
-    rysujNadruk(c, uklad, f, t, false);   // bez czyszczenia — nadruk siada na ciemnej karcie
+    rysujNadruk(c, uklad, f, t, false, motyw);   // bez czyszczenia — nadruk siada na ciemnej karcie
     c.restore();
     c.restore();
 }
-export async function zbudujPodglad(uklad: Uklad, f: FormatDruku, t: TekstyDruku): Promise<Blob> {
+export async function zbudujPodglad(uklad: Uklad, f: FormatDruku, t: TekstyDruku, motyw: HTMLCanvasElement | null = null): Promise<Blob> {
     const p = document.createElement('canvas'); p.width = PODGLAD.w; p.height = PODGLAD.h;
     const c = p.getContext('2d');
     if (!c) throw new Error('Przeglądarka nie dała płótna 2D — podglądu nie da się złożyć.');
-    rysujPodglad(c, uklad, f, t);
-    const blob = await new Promise<Blob | null>((r) => p.toBlob(r, 'image/png'));
-    if (!blob) throw new Error('Nie udało się zapisać podglądu jako PNG.');
-    return blob;
+    rysujPodglad(c, uklad, f, t, motyw);
+    return doJpeg(p, 'podglądu');
 }
 
 /** Składa plik produkcyjny i oddaje PNG z przezroczystym tłem. */
-export async function zbudujNadruk(uklad: Uklad, f: FormatDruku, t: TekstyDruku): Promise<Blob> {
+export async function zbudujNadruk(uklad: Uklad, f: FormatDruku, t: TekstyDruku, motyw: HTMLCanvasElement | null = null): Promise<Blob> {
     const p = document.createElement('canvas'); p.width = f.w; p.height = f.h;
     const c = p.getContext('2d');
     if (!c) throw new Error('Przeglądarka nie dała płótna 2D — pliku nie da się złożyć.');
-    rysujNadruk(c, uklad, f, t);
+    rysujNadruk(c, uklad, f, t, true, motyw);
+    return doPng(p, 'pliku');
+}
+
+async function doPng(p: HTMLCanvasElement, co: string): Promise<Blob> {
     const blob = await new Promise<Blob | null>((r) => p.toBlob(r, 'image/png'));
-    if (!blob) throw new Error('Nie udało się zapisać pliku jako PNG.');
+    if (!blob) throw new Error(`Nie udało się zapisać ${co} jako PNG.`);
     return blob;
+}
+/**
+ * Podgląd sklepowy = JPEG. Ciemna mgławica AOP (gładka poświata + setki gwiazd) w PNG waży
+ * 1,6 MB na kartę — 48 MB na kolekcję w repozytorium portalu. PNG zostaje przy plikach do druku.
+ */
+async function doJpeg(p: HTMLCanvasElement, co: string, jakosc = 0.9): Promise<Blob> {
+    const blob = await new Promise<Blob | null>((r) => p.toBlob(r, 'image/jpeg', jakosc));
+    if (!blob) throw new Error(`Nie udało się zapisać ${co} jako JPEG.`);
+    return blob;
+}
+
+// ══════════════ 🌌 ALL-OVER PRINT ══════════════
+//
+// Panele AOP rysuje `rysujPlik` z bestsellerów Printful — ten sam kod, który od 2026-11-07 robi
+// kurtki i plecaki, tylko z barwą wybranej kolorystyki. Tło jest PEŁNE i ciemne: Printful szyje
+// AOP z BIAŁEJ belki, więc przezroczysty piksel wychodzi z szwalni jako biała plama.
+
+export interface PanelDruku { placement: string; nazwa: string; w: number; h: number; rysunek: string }
+
+/** Jeden panel (przód / tył / rękaw) w jednej kolorystyce. */
+export function rysujPanelAop(panel: PanelDruku, motyw: HTMLCanvasElement, t: TekstyDruku, nota: string, kolorystyka: string): HTMLCanvasElement {
+    return rysujPlik(
+        panel.rysunek as Rysunek, panel.w, panel.h, motyw,
+        { tytul: t.napis, podtytul: t.podpis, opowiesc: nota, cytat: t.podpis },
+        t.napis, `${t.napis}-${kolorystyka}-${panel.placement}`, barwaZId(kolorystyka),
+    );
+}
+export async function zbudujPanelAop(panel: PanelDruku, motyw: HTMLCanvasElement, t: TekstyDruku, nota: string, kolorystyka: string): Promise<Blob> {
+    return doPng(rysujPanelAop(panel, motyw, t, nota, kolorystyka), `panelu ${panel.nazwa}`);
+}
+
+/** Podgląd sklepowy produktu AOP: panel przodu wpasowany w stały kadr 1200×1440 ze złotą ramką. */
+export function rysujPodgladAop(c: CanvasRenderingContext2D, panel: PanelDruku, motyw: HTMLCanvasElement, t: TekstyDruku, nota: string, kolorystyka: string) {
+    const { w: W, h: H } = PODGLAD;
+    const mini = { ...panel, w: Math.round(panel.w / 6), h: Math.round(panel.h / 6) };   // ten sam układ, 1/6 rozdzielczości
+    const p = rysujPanelAop(mini, motyw, t, nota, kolorystyka);
+    c.save(); c.clearRect(0, 0, W, H);
+    c.fillStyle = '#0d0e12'; c.fillRect(0, 0, W, H);
+    const s = Math.min((W * 0.88) / p.width, (H * 0.88) / p.height);
+    (c as unknown as { imageSmoothingQuality: string }).imageSmoothingQuality = 'high';
+    c.drawImage(p, (W - p.width * s) / 2, (H - p.height * s) / 2, p.width * s, p.height * s);
+    c.strokeStyle = 'rgba(230,196,124,0.28)'; c.lineWidth = 3;
+    c.strokeRect(28.5, 28.5, W - 57, H - 57);
+    c.restore();
+}
+export async function zbudujPodgladAop(panel: PanelDruku, motyw: HTMLCanvasElement, t: TekstyDruku, nota: string, kolorystyka: string): Promise<Blob> {
+    const p = document.createElement('canvas'); p.width = PODGLAD.w; p.height = PODGLAD.h;
+    const c = p.getContext('2d');
+    if (!c) throw new Error('Przeglądarka nie dała płótna 2D — podglądu nie da się złożyć.');
+    rysujPodgladAop(c, panel, motyw, t, nota, kolorystyka);
+    return doJpeg(p, 'podglądu AOP');
 }

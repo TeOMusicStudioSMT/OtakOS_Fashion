@@ -1,0 +1,99 @@
+{
+  "_opis": "Dlaczego TE postacie. Wybór Suwerena 2026-11-19 ze 136 Mini-TeOgochi; identyfikacja po polu `promptObrazu` (angielskie prompty FLUX), nie po polskich opisach — te były zbyt mgliste. Źródłem prawdy dla kodu jest `teoshop.ts` (stałe P_*); ten plik tłumaczy WYBÓR, a nie go definiuje.",
+  "_obrazy": "GET /api/nadruki/motyw/<id> (Szwalnia) → GET /api/assety3d/obrazy/<id>/plik (most Katedry)",
+  "_rozstrzygniete": "2026-11-19 — para królewska znaleziona po zrzutach Suwerena, postać ukryta narysowana FLUX-em.",
+  "linie": [
+    {
+      "id": "linia-a-new-energy",
+      "nazwa": "0.00G NEW ENERGY ORIGINALS",
+      "kolorystykaWiodaca": "Cosmic Indigo",
+      "motywy": [
+        {
+          "rola": "subtelny / kosmiczny",
+          "obraz": "mini-teogochi-mini-fiolek-cialo-z-szrono-538c",
+          "nazwa": "Mini-Fiołek (Koci Kwiat)",
+          "dowod": "promptObrazu: „body of frosted petals in purple and blue” — zgadza się ze zrzutem Suwerena",
+          "hasla": ["Spirit Is Present", "Infinite Consciousness", "The Universe Conspires to Fill Your Desires"]
+        },
+        {
+          "rola": "suwerenny / zadziorny",
+          "obraz": "mini-teogochi-pecherzik-wariant-purpurow-a1bd",
+          "nazwa": "Pęcherzik — Purpurowy Puch",
+          "dowod": "POTWIERDZONE WZROKOWO: fioletowy puchaty przytulak",
+          "hasla": ["I Am", "Be Wise, Minimize", "Energy Serves the Master", "Sinners Are Suckers", "Drive More, Think Less", "Live Your Bucket List", "You Choose the Experience"]
+        }
+      ]
+    },
+    {
+      "id": "linia-b-sessions",
+      "nazwa": "ELARA & KAEL · 0.00G SESSIONS",
+      "kolorystykaWiodaca": "Obsidian Black",
+      "motywy": [
+        {
+          "rola": "Kael — królewicz w złotej koronie",
+          "obraz": "mini-teogochi-czulkowiec-kozaczek-z-czul-e533",
+          "nazwa": "Czułkowiec",
+          "dowod": "POTWIERDZONE WZROKOWO: złota korona z klejnotami, koronkowy płaszczyk, rubin na piersi. Bryła 3D tej postaci leży w assety3d/…-1c16 (TRELLIS.2, z wycinkiem)."
+        },
+        {
+          "rola": "Elara — dziewczynka z lampionem na głowie",
+          "obraz": "mini-teogochi-plochuszkowy-ma-przezroczy-423e",
+          "nazwa": "Płochuszkowy",
+          "dowod": "POTWIERDZONE WZROKOWO: żółto-różowa sukienka, biała kokarda, świecący lampion na czubku głowy"
+        },
+        {
+          "rola": "symbol nocny / naklejka kolekcjonerska",
+          "obraz": "mini-teogochi-lampion-spiewak-zgaszla-sz-bdf4",
+          "nazwa": "Lampion-Śpiewak (Lampa Naftowa)",
+          "dowod": "POTWIERDZONE WZROKOWO: lampa naftowa na nogach, żarzący się knot. Suweren: „samą Lampę Naftową zostaw jako wariant nocny” → produkt `sessions-sticker-the-night-lamp`."
+        }
+      ]
+    },
+    {
+      "id": "linia-c-solar-pulse",
+      "nazwa": "BOX 02 · SOLAR PULSE",
+      "kolorystykaWiodaca": "Solar Gold",
+      "motywy": [
+        {
+          "rola": "żołądź ze słońcem",
+          "obraz": "mini-teogochi-zoledzik-ma-male-barylkowa-cacf",
+          "nazwa": "Żołędzik",
+          "dowod": "promptObrazu: „small barrel-shaped figure, smooth oak bark body, two thick wooden legs”"
+        },
+        {
+          "rola": "złoty dmuchawiec",
+          "obraz": "mini-teogochi-wiotki-stworek-ze-sprezyst-32ed",
+          "nazwa": "Wiotki Dmuchawiec",
+          "dowod": "promptObrazu: „Golden creature, made of flexible dandelion stem”"
+        }
+      ]
+    },
+    {
+      "id": "linia-d-hidengirl",
+      "nazwa": "BOX 03 · THE STORY OF HIDENGIRL",
+      "kolorystykaWiodaca": "Alchemical Emerald",
+      "motywy": [
+        {
+          "rola": "biała chmurka z gwiazdką",
+          "obraz": "mini-teogochi-puderciel-snieg-puchaty-ma-8e07",
+          "nazwa": "Puderciel-Śnieg",
+          "dowod": "promptObrazu: „Fluffy, small creature, white cloud material”",
+          "uwagaTechniczna": "Biały stworek na białym tle = przypadek graniczny wycinanki. Ma w `teoshop.ts` własną `tolerancja: 30` (domyślna 46 wygryzała mu brzuch), a etap usuwania cienia w `wytnijTlo` dostał ograniczony zasięg — jego futro też jest „szare” w rozumieniu tamtego testu."
+        },
+        {
+          "rola": "szmaragdowo-fioletowy kryształ z konstelacjami",
+          "obraz": "mini-teogochi-gwiezdnik-promieniscie-swi-afae",
+          "nazwa": "Gwiezdnik (Star-Gazer)",
+          "dowod": "POTWIERDZONE WZROKOWO: wielościenne ciało w zieleni i fiolecie, złote gwiazdozbiory"
+        },
+        {
+          "rola": "UKRYTA — narysowana dla tej kolekcji",
+          "obraz": "mini-teogochi-hidengirl-z-gitara-dziewcz-5a1a",
+          "nazwa": "HidenGirl",
+          "dowod": "Narysowana FLUX-em 2026-11-19 ze wzoru, który Suweren przysłał zdjęciem: blado-błękitna gitara akustyczna w białych chmurkach, karminowa spódniczka z tiulu, cekinowy top, białe kowbojki w kryształkach.",
+          "wariant3d": "mini-teogochi-hidengirl-dziewczynka-bard-4ea2 — ta sama postać w A-pozie (styl `postac3d`), zostawiona jako karta pod rzeźbę TRELLIS. Gitara w niej nie weszła: baza stylu żąda widocznych, pustych dłoni."
+        }
+      ]
+    }
+  ]
+}

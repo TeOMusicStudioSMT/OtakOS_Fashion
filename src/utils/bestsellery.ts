@@ -15,6 +15,24 @@ import { aureola, losowe, plotno, postac, rozlej, tekstSrodek, zawin, naszywkaPo
 export const TLO = '#0b0c10', ZLOTO = '#d4a853', KREM = '#f4f1ea';
 const PAL: Paleta = { tusz: KREM, zloto: ZLOTO, akcent: '#34d399', cien: 'rgba(212,168,83,0.30)' };
 
+/**
+ * 🎨 Kolorystyki All-Over Print (Suweren 2026-11-19).
+ *
+ * KAŻDA ma ciemne, pełne tło — to nie jest kaprys estetyczny: Printful szyje AOP z BIAŁEJ belki,
+ * więc przezroczystość albo jasne tło wychodzą z pralni jako biała plama. Zmieniamy barwę nici
+ * (siatka, konstelacje, napisy), nie krycie.
+ */
+export interface Barwa { id: string; nazwa: string; tlo: string; zloto: string; krem: string; akcent: string }
+export const BARWY: Barwa[] = [
+  { id: 'obsidian-black', nazwa: 'Obsidian Black', tlo: TLO, zloto: ZLOTO, krem: KREM, akcent: '#34d399' },
+  { id: 'cosmic-indigo', nazwa: 'Cosmic Indigo', tlo: '#0a0d2b', zloto: '#8fa7ff', krem: '#eef1ff', akcent: '#4b5bd6' },
+  { id: 'solar-gold', nazwa: 'Solar Gold', tlo: '#1a1104', zloto: '#ffc552', krem: '#fff6e2', akcent: '#e07b1f' },
+  { id: 'alchemical-emerald', nazwa: 'Alchemical Emerald', tlo: '#04150f', zloto: '#4fd9a4', krem: '#e6fff5', akcent: '#1f8f6a' },
+];
+export const BARWA_DOMYSLNA = BARWY[0];
+export const barwaZId = (id: string) => BARWY.find((b) => b.id === id) ?? BARWA_DOMYSLNA;
+const paletaBarwy = (b: Barwa): Paleta => (b === BARWA_DOMYSLNA ? PAL : { tusz: b.krem, zloto: b.zloto, akcent: b.akcent, cien: 'rgba(0,0,0,0.30)' });
+
 export type Rysunek = 'naklejka-postac' | 'naklejka-naszywka' | 'plakat' | 'magnes' | 'zderzak' | 'etui' | 'czapka' | 'aop-glowny' | 'aop-plecak' | 'aop-tyl' | 'aop-pas' | 'aop-tlo';
 export interface MiejsceDruku { placement: string; nazwa: string; w: number; h: number; rysunek: Rysunek }
 export interface WariantPF { wartosc: string; variantId: number; cenaEur: number; miejsca?: MiejsceDruku[] }
@@ -85,14 +103,14 @@ export const nazwaPliku = (mi: MiejsceDruku) => `${mi.placement}-${mi.w}x${mi.h}
 // ══════════ RYSOWANIE ══════════
 
 /** Ciemne katedralne tło: poświata, złota siatka, konstelacje i runy — pełne krycie (All-Over Print). */
-export function tloKatedry(g: CanvasRenderingContext2D, W: number, H: number, ziarno: string) {
+export function tloKatedry(g: CanvasRenderingContext2D, W: number, H: number, ziarno: string, b: Barwa = BARWA_DOMYSLNA) {
   const los = losowe(`${ziarno}-tlo`), S = Math.max(W, H), krok = S / 14;
-  g.fillStyle = TLO; g.fillRect(0, 0, W, H);
+  g.fillStyle = b.tlo; g.fillRect(0, 0, W, H);
   const pg = g.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, S * 0.7);
-  pg.addColorStop(0, 'rgba(212,168,83,0.10)'); pg.addColorStop(1, 'rgba(0,0,0,0)');
+  pg.addColorStop(0, `${b.zloto}1a`); pg.addColorStop(1, 'rgba(0,0,0,0)');
   g.fillStyle = pg; g.fillRect(0, 0, W, H);
   // siatka (romby) — cienka złota nić
-  g.strokeStyle = ZLOTO; g.globalAlpha = 0.13; g.lineWidth = Math.max(1, S * 0.0009);
+  g.strokeStyle = b.zloto; g.globalAlpha = 0.13; g.lineWidth = Math.max(1, S * 0.0009);
   g.beginPath();
   for (let k = -H; k < W + H; k += krok) { g.moveTo(k, 0); g.lineTo(k + H, H); g.moveTo(k, H); g.lineTo(k + H, 0); }
   g.stroke();
@@ -102,16 +120,16 @@ export function tloKatedry(g: CanvasRenderingContext2D, W: number, H: number, zi
   let poprz: [number, number] | null = null;
   for (let i = 0; i < n; i++) {
     const x = los() * W, y = los() * H, r = S * (0.0012 + los() * 0.0022);
-    g.fillStyle = los() > 0.75 ? KREM : ZLOTO; g.globalAlpha = 0.45 + los() * 0.45;
+    g.fillStyle = los() > 0.75 ? b.krem : b.zloto; g.globalAlpha = 0.45 + los() * 0.45;
     g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
     if (poprz && los() > 0.55 && Math.hypot(x - poprz[0], y - poprz[1]) < krok * 2.2) {
-      g.strokeStyle = ZLOTO; g.globalAlpha = 0.28; g.lineWidth = Math.max(1, S * 0.0007);
+      g.strokeStyle = b.zloto; g.globalAlpha = 0.28; g.lineWidth = Math.max(1, S * 0.0007);
       g.beginPath(); g.moveTo(...poprz); g.lineTo(x, y); g.stroke();
     }
     poprz = [x, y];
   }
   // rzadkie znaki 0.00G
-  g.globalAlpha = 0.16; g.fillStyle = ZLOTO; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.globalAlpha = 0.16; g.fillStyle = b.zloto; g.textAlign = 'center'; g.textBaseline = 'middle';
   g.font = `700 ${Math.round(krok * 0.32)}px Cinzel, Georgia, serif`;
   for (let y = krok; y < H; y += krok * 2.5) for (let x = (y / krok) % 2 ? krok : krok * 2.2; x < W; x += krok * 2.5) g.fillText('0.00G', x, y);
   g.globalAlpha = 1;
@@ -147,15 +165,16 @@ function wpasuj(g: CanvasRenderingContext2D, src: HTMLCanvasElement, x: number, 
 }
 
 /** Medalion postaci w aureoli (bez tła) — do magnesów, etui, paneli AOP. */
-function medalion(m: HTMLCanvasElement, ziarno: string, S: number) {
+function medalion(m: HTMLCanvasElement, ziarno: string, S: number, b: Barwa = BARWA_DOMYSLNA) {
   const c = plotno(S, S), g = c.getContext('2d')!;
-  aureola(g, S / 2, S / 2, S * 0.44, PAL, losowe(ziarno));
+  aureola(g, S / 2, S / 2, S * 0.44, paletaBarwy(b), losowe(ziarno));
   postac(g, m, S / 2, S * 0.52, S * 0.72, S * 0.8);
   return c;
 }
 
-export function rysujPlik(r: Rysunek, W: number, H: number, mot: HTMLCanvasElement, t: TekstKolekcji, imie: string, ziarno: string): HTMLCanvasElement {
+export function rysujPlik(r: Rysunek, W: number, H: number, mot: HTMLCanvasElement, t: TekstKolekcji, imie: string, ziarno: string, b: Barwa = BARWA_DOMYSLNA): HTMLCanvasElement {
   const IMIE = imie.toUpperCase();
+  const ZLOTO = b.zloto, KREM = b.krem;   // przesłania stałe modułu — reszta funkcji rysuje barwą wybranej kolorystyki
   if (r === 'naklejka-postac') return naklejkaPostaci(mot, W, H);
   if (r === 'naklejka-naszywka') { const c = plotno(W, H); wpasuj(c.getContext('2d')!, naszywkaPostaci(mot, 2400), W * 0.04, H * 0.04, W * 0.92, H * 0.92); return c; }
   if (r === 'plakat') return plakatPelny(mot, t, ziarno, W, H);
@@ -166,13 +185,13 @@ export function rysujPlik(r: Rysunek, W: number, H: number, mot: HTMLCanvasEleme
     tekstSrodek(g, `${IMIE} · STYLE`, W / 2, H * 0.86, `800 ${H * 0.2}px Cinzel, Georgia, serif`, KREM, W * 0.006, W * 0.9);
     return c;
   }
-  tloKatedry(g, W, H, ziarno);
+  tloKatedry(g, W, H, ziarno, b);
   if (r === 'aop-tlo') return c;
   if (r === 'magnes' || r === 'zderzak') {
     // margines bezpieczeństwa: Printful przycina brzeg magnesu (2026-11-07 mockup: „0.00G STYLE” ucięte z prawej) — treść ≥ 7 % od krawędzi
     const M = Math.max(W, H) * 0.07;
     const S = Math.min(H - M * 1.2, W * 0.4);
-    g.drawImage(medalion(mot, ziarno, Math.round(S)), M, (H - S) / 2, S, S);
+    g.drawImage(medalion(mot, ziarno, Math.round(S), b), M, (H - S) / 2, S, S);
     const x0 = M + S + W * 0.03, sz = W - x0 - M, cx = x0 + sz / 2;
     if (r === 'zderzak') {
       tekstSrodek(g, `0.00G · ${IMIE}`, cx, H * 0.42, `900 ${H * 0.3}px Cinzel, Georgia, serif`, KREM, W * 0.004, sz);
@@ -186,7 +205,7 @@ export function rysujPlik(r: Rysunek, W: number, H: number, mot: HTMLCanvasEleme
   }
   if (r === 'etui') {
     const S = W * 0.92;
-    g.drawImage(medalion(mot, ziarno, Math.round(S)), (W - S) / 2, H * 0.22, S, S);
+    g.drawImage(medalion(mot, ziarno, Math.round(S), b), (W - S) / 2, H * 0.22, S, S);
     tekstSrodek(g, IMIE, W / 2, H * 0.76, `900 ${W * 0.13}px Cinzel, Georgia, serif`, KREM, W * 0.01, W * 0.86);
     tekstSrodek(g, '0.00G STYLE', W / 2, H * 0.83, `600 ${W * 0.06}px Cinzel, Georgia, serif`, ZLOTO, W * 0.01, W * 0.8);
     return c;
@@ -204,7 +223,7 @@ export function rysujPlik(r: Rysunek, W: number, H: number, mot: HTMLCanvasEleme
     // tył: opowieść w karcie, mniejszy medalion u góry
     // wszystko w pasach liczonych od wysokości: medalion 8–50 %, tytuł, opowieść do 84 %, cytat 91 % — nic się nie nakłada
     const k = Math.min(W, H * 0.78), S = Math.min(W * 0.6, H * 0.42);
-    g.drawImage(medalion(mot, `${ziarno}-tyl`, Math.round(S)), (W - S) / 2, H * 0.08, S, S);
+    g.drawImage(medalion(mot, `${ziarno}-tyl`, Math.round(S), b), (W - S) / 2, H * 0.08, S, S);
     const yT = H * 0.08 + S + k * 0.06;
     tekstSrodek(g, (t.tytul || IMIE).toUpperCase(), W / 2, yT, `900 ${k * 0.07}px Cinzel, Georgia, serif`, KREM, k * 0.008, W * 0.86);
     g.font = `400 ${k * 0.03}px "Plus Jakarta Sans", Georgia, serif`; g.fillStyle = KREM; g.textAlign = 'center'; g.textBaseline = 'middle';
@@ -218,14 +237,14 @@ export function rysujPlik(r: Rysunek, W: number, H: number, mot: HTMLCanvasEleme
     // „Front & Pocket” Printful: dolna część pliku to naszyta kieszeń z zamkiem — pas ok. 52–61 % wysokości chowa się
     // pod jej krawędzią (2026-11-08 mockup: Koralik bez nóg). Postać cała nad kieszenią, imię na kieszeni.
     const S = Math.min(W * 0.84, H * 0.45);
-    g.drawImage(medalion(mot, ziarno, Math.round(S)), (W - S) / 2, H * 0.035, S, S);
+    g.drawImage(medalion(mot, ziarno, Math.round(S), b), (W - S) / 2, H * 0.035, S, S);
     tekstSrodek(g, (t.tytul || IMIE).toUpperCase(), W / 2, H * 0.76, `900 ${W * 0.1}px Cinzel, Georgia, serif`, KREM, W * 0.01, W * 0.74);
     tekstSrodek(g, '0.00G STYLE', W / 2, H * 0.84, `600 ${W * 0.045}px Cinzel, Georgia, serif`, ZLOTO, W * 0.012, W * 0.6);
     return c;
   }
   // aop-glowny: wielka postać w aureoli na środku panelu
   const S = Math.min(W, H) * 0.86;
-  g.drawImage(medalion(mot, ziarno, Math.round(S)), (W - S) / 2, (H - S) / 2 - H * 0.02, S, S);
+  g.drawImage(medalion(mot, ziarno, Math.round(S), b), (W - S) / 2, (H - S) / 2 - H * 0.02, S, S);
   if (H >= W) tekstSrodek(g, (t.tytul || IMIE).toUpperCase(), W / 2, (H + S) / 2 + (H - S) / 4, `900 ${Math.min(W * 0.075, (H - S) * 0.2)}px Cinzel, Georgia, serif`, KREM, W * 0.008, W * 0.86);
   return c;
 }

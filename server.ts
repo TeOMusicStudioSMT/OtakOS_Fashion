@@ -1,3 +1,4 @@
+import './srodowisko';   // MUSI być pierwszy: wczytuje .env przed stałymi pozostałych modułów
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
@@ -40,10 +41,6 @@ function kluczGemini(): string | null {
     return m ? m[1] : null;
   } catch { return null; }
 }
-import dotenv from 'dotenv';
-
-dotenv.config();
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -496,8 +493,13 @@ app.post('/api/teoshop/plik/:handle', express.raw({ type: 'image/png', limit: '6
   try { return res.json({ ok: true, ...(await TeOShop.zapiszPlik(req.params.handle, req.body as Buffer)) }); }
   catch (e: any) { return res.status(400).json({ ok: false, error: String(e?.message ?? e) }); }
 });
-app.post('/api/teoshop/podglad/:handle', express.raw({ type: 'image/png', limit: '12mb' }), async (req, res) => {
-  try { return res.json({ ok: true, ...(await TeOShop.zapiszPodglad(req.params.handle, req.body as Buffer)) }); }
+// 🌌 panel All-Over Print: `?kolorystyka=<id>&panel=<placement>`; panel 4200×5400 z pełnym kryciem waży więcej niż DTG
+app.post('/api/teoshop/aop/:handle', express.raw({ type: 'image/png', limit: '120mb' }), async (req, res) => {
+  try { return res.json({ ok: true, ...(await TeOShop.zapiszPanelAop(req.params.handle, String(req.query.kolorystyka ?? ''), String(req.query.panel ?? ''), req.body as Buffer)) }); }
+  catch (e: any) { return res.status(400).json({ ok: false, error: String(e?.message ?? e) }); }
+});
+app.post('/api/teoshop/podglad/:handle', express.raw({ type: 'image/jpeg', limit: '12mb' }), async (req, res) => {
+  try { return res.json({ ok: true, ...(await TeOShop.zapiszPodglad(req.params.handle, req.body as Buffer, req.query.kolorystyka ? String(req.query.kolorystyka) : null)) }); }
   catch (e: any) { return res.status(400).json({ ok: false, error: String(e?.message ?? e) }); }
 });
 app.post('/api/teoshop/csv', async (_req, res) => {
