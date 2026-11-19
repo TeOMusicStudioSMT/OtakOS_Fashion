@@ -297,7 +297,10 @@ export function wiersze(produkty: Produkt[] = PRODUKTY): string[][] {
                 p.handle, pierwszy ? p.tytul : '', pierwszy ? opisHtml(p) : '', pierwszy ? VENDOR : '', pierwszy ? p.typ : '',
                 pierwszy ? p.tagi.join(', ') : '', pierwszy ? 'TRUE' : '',
                 p.opcja.nazwa, o1, o2 ? 'Kolorystyka' : '', o2 ?? '',
-                `${p.handle}-${uchwyt(o1)}${o2 ? `-${idKolorystyki(o2)}` : ''}`.toUpperCase(), String(gramy(p)), 'shopify', '0', 'continue', 'manual',
+                // ⚠️ `Variant Inventory Tracker` PUSTY, nie „shopify” (2026-11-19, ostrzeżenie z panelu Printful:
+                // „Printful can only fulfill orders when their inventory is managed by us” — wariant, którego zapas
+                // liczy Shopify, nie zostanie zrealizowany automatycznie przez drukarnię).
+                `${p.handle}-${uchwyt(o1)}${o2 ? `-${idKolorystyki(o2)}` : ''}`.toUpperCase(), String(gramy(p)), '', '', 'continue', 'manual',
                 p.cenaEur.toFixed(2), 'TRUE', 'TRUE',
                 pierwszy ? urlPodgladu(p.handle) : '', pierwszy ? '1' : '', pierwszy ? `${p.tytul} — ${FORMATY[p.format].metoda}` : '',
                 pierwszy ? 'active' : '',
