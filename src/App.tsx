@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import TeOShop from './components/TeOShop';
 import { SolletPiece, Archetype, AnomalyType, ViewMode } from './types';
 import { SOLLET_KATALOG } from './data/katalog';
 import { Header } from './components/Header';
@@ -168,6 +169,7 @@ function AppContent() {
 
         {/* Czwarta tafla — kto pilnuje, czy to żyje. */}
         {viewMode === 'ai' && <Dozorca />}
+        {viewMode === 'teoshop' && <TeOShop />}
 
         {viewMode === 'runway-cards' && (
           <div className="space-y-6">

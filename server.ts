@@ -13,6 +13,7 @@ import { lista as wczytajNadruki, motywy as motywyNadrukow, makieta as makietaUb
 import { przeglad } from './dozorca';
 import { obroc, lista as wczytajObroty, wariantyWzoru, DLUGOSCI as DLUGOSCI_OBROTU } from './obrot';
 import { lista as wczytajMarki, zapisz as zapiszMarke, usun as usunMarke, wgrajLogo, nalozLogo, wycen, ROGI } from './marki';
+import * as TeOShop from './teoshop';
 
 /**
  * ⚠️ CHMURA JEST WYŁĄCZONA DOMYŚLNIE.
@@ -483,6 +484,21 @@ app.get('/api/krawiec/stan', async (_req, res) => {
     // ⚠️ Szablon NIE jest silnikiem AI i tak jest opisany.
     szablon: { zawszeDostepny: true, uwaga: 'Składanka z gotowych zwrotów, nie projekt AI.' },
   });
+});
+
+// 🛍 TeO ShoP — kolekcja i eksport do Shopify (teoshop.ts). PNG rysuje przeglądarka i odsyła tu
+// surowym ciałem; `express.json` ma 10 MB, a plik DTG 4500×5400 bywa większy — stąd własny `raw`.
+app.get('/api/teoshop', async (_req, res) => {
+  try { return res.json({ ok: true, ...(await TeOShop.stan()) }); }
+  catch (e: any) { return res.status(500).json({ ok: false, error: String(e?.message ?? e) }); }
+});
+app.post('/api/teoshop/plik/:handle', express.raw({ type: 'image/png', limit: '60mb' }), async (req, res) => {
+  try { return res.json({ ok: true, ...(await TeOShop.zapiszPlik(req.params.handle, req.body as Buffer)) }); }
+  catch (e: any) { return res.status(400).json({ ok: false, error: String(e?.message ?? e) }); }
+});
+app.post('/api/teoshop/csv', async (_req, res) => {
+  try { return res.json({ ok: true, ...(await TeOShop.zapiszCsv()) }); }
+  catch (e: any) { return res.status(500).json({ ok: false, error: String(e?.message ?? e) }); }
 });
 
 app.get('/api/katalog', (req, res) => {

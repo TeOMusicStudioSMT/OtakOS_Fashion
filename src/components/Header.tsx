@@ -19,7 +19,7 @@ import React, { useState } from 'react';
 import { ViewMode } from '../types';
 import {
     Sparkles, Download, Layers, Grid3X3, Palette, Code2,
-    Scissors, BadgeCheck, Brain, ChevronDown, Shirt,
+    Scissors, BadgeCheck, Brain, ChevronDown, Shirt, ShoppingBag,
 } from 'lucide-react';
 import { ThemeSwitcher } from './ThemeSwitcher';
 import { useTheme } from '../context/ThemeContext';
@@ -41,6 +41,7 @@ const GLOWNE: { id: ViewMode; nazwa: string; Ikona: React.ElementType }[] = [
     { id: 'marki', nazwa: 'Brand', Ikona: BadgeCheck },
     { id: 'nadruki', nazwa: 'Nadruki', Ikona: Shirt },
     { id: 'ai', nazwa: 'F-Ai', Ikona: Brain },
+    { id: 'teoshop', nazwa: 'TeO ShoP', Ikona: ShoppingBag },
 ];
 
 /** Widoki z szablonu — działają na opisach, nie na obrazach. */
