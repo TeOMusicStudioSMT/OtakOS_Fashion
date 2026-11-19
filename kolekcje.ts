@@ -24,15 +24,16 @@ import { kontrolaStrony, pngZDpi, type WynikQc } from './kontrolaSzwalni';
 const uruchom = promisify(execFile);
 const OLLAMA = process.env.OTAKOS_OLLAMA || 'http://127.0.0.1:11434';
 /**
- * 📁 Korzeń, pod którym Szwalnia trzyma kolekcje (nadruki, strefy druku 300 DPI, produkty.csv).
- * Domyślnie katalog repozytorium; `OTAKOS_FASHION_WYJSCIE` przenosi całość w dowolne miejsce na dysku,
- * np. `F:\TeO_Kolekcje` → pliki lądują w `F:\TeO_Kolekcje\public\nadruki\kolekcje\<id>`.
+ * 📁 `TEO_FASHION_STUDIO` — katalog studia, pod którym Szwalnia trzyma kolekcje (nadruki, strefy druku
+ * 300 DPI, produkty.csv). JEDNA nazwa po obu stronach: tę samą zmienną czyta Katedra
+ * (`wiesio-bridge.js` → `katalogFashion`), więc ustawiasz ją raz, np.
+ * `TEO_FASHION_STUDIO=F:\5 stars\TeO STUDIO\TeO App HuB\ToO APP\TeO_Fashion_Studio`.
+ * Bez niej — katalog, z którego uruchomiono Szwalnię (dotychczasowe zachowanie).
  *
  * Układ `public/…` zostaje CELOWO: Katedra dokleja go sama (`StolProduktowy`, `ZebrraFashion` liczą
  * `<katalogFashion>/public/nadruki/…`), więc spłaszczenie ścieżki zerwałoby Stół Produktowy i potok sklepu.
- * Przenosząc wyjście, ustaw Katedrze `OTAKOS_FASHION_DIR` na ten sam katalog — wtedy cały łańcuch działa dalej.
  */
-const KORZEN = process.env.OTAKOS_FASHION_WYJSCIE ? path.resolve(process.env.OTAKOS_FASHION_WYJSCIE) : process.cwd();
+const KORZEN = process.env.TEO_FASHION_STUDIO ? path.resolve(process.env.TEO_FASHION_STUDIO) : process.cwd();
 const PUBLIC = path.join(KORZEN, 'public');
 const KAT = path.join(PUBLIC, 'nadruki', 'kolekcje');
 const ID = /^k-[0-9a-f]{8}$/;
