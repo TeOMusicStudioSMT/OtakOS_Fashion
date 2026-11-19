@@ -496,6 +496,10 @@ app.post('/api/teoshop/plik/:handle', express.raw({ type: 'image/png', limit: '6
   try { return res.json({ ok: true, ...(await TeOShop.zapiszPlik(req.params.handle, req.body as Buffer)) }); }
   catch (e: any) { return res.status(400).json({ ok: false, error: String(e?.message ?? e) }); }
 });
+app.post('/api/teoshop/podglad/:handle', express.raw({ type: 'image/png', limit: '12mb' }), async (req, res) => {
+  try { return res.json({ ok: true, ...(await TeOShop.zapiszPodglad(req.params.handle, req.body as Buffer)) }); }
+  catch (e: any) { return res.status(400).json({ ok: false, error: String(e?.message ?? e) }); }
+});
 app.post('/api/teoshop/csv', async (_req, res) => {
   try { return res.json({ ok: true, ...(await TeOShop.zapiszCsv()) }); }
   catch (e: any) { return res.status(500).json({ ok: false, error: String(e?.message ?? e) }); }

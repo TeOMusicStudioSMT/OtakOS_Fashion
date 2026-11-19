@@ -17,6 +17,14 @@ import path from 'path';
 const KORZEN = process.env.TEO_FASHION_STUDIO ? path.resolve(process.env.TEO_FASHION_STUDIO) : process.cwd();
 export const KATALOG = path.join(KORZEN, 'public', 'nadruki', 'teo-shop');
 export const PLIK_CSV = path.join(KATALOG, 'teo_shop_import.csv');
+/**
+ * 🏬 Podglądy sklepowe (1200×1440) — JEDYNE pliki, które wychodzą poza dysk Suwerena.
+ * `TEO_SKLEP_IMG` wskazuje katalog portalu (`TeOStory.studio-on-demaind/public/sklep-img`), skąd
+ * Cloud Run poda je pod `TEO_SKLEP_IMG_URL`. Pliki produkcyjne 4500×5400 zostają na F: do druku.
+ */
+export const KATALOG_PODGLADOW = process.env.TEO_SKLEP_IMG ? path.resolve(process.env.TEO_SKLEP_IMG) : path.join(KATALOG, '_podglady');
+export const ADRES_PODGLADU = (process.env.TEO_SKLEP_IMG_URL || 'https://teostory.studio/sklep-img').replace(/\/+$/, '');
+export const urlPodgladu = (handle: string) => `${ADRES_PODGLADU}/${handle}.png`;
 export const VENDOR = 'TeO 0.00G Studio';
 
 /** Formaty druku. Metodę nadruku niesie każdy produkt do opisu — kupujący ma wiedzieć, co dostaje. */
@@ -37,19 +45,30 @@ export interface Produkt {
 const ROZMIARY_ODZIEZ = ['S', 'M', 'L', 'XL', 'XXL'];
 const ROZMIARY_NAKLEJKA = ['7 cm', '10 cm', '15 cm'];
 const ROZMIARY_PLAKAT = ['A3', 'A2'];
-/** 🎟 Wzmianka dla społeczności — trafia do opisu KAŻDEGO produktu Linii A. */
-export const KOD_SHAUMBRA = 'Specjalny kod rabatowy dla rodziny Shaumbra: wpisz SHAUMBRA przy kasie (-20%)';
+/**
+ * 🕊 Nota Linii A — trafia do opisu KAŻDEGO z dziesięciu produktów.
+ * Mówi wprost, że kolekcja jest NIEZALEŻNA (bez powiązania korporacyjnego), deklaruje darowiznę
+ * i odsyła po darmową wiedzę do źródła. Kod rabatowy: SOVEREIGN20.
+ */
+export const NOTA_LINII_A = 'Niezależna kolekcja autorska TeO 0.00G Studio inspirowana uniwersalnymi hasłami nowej świadomości. '
+    + '10% zysku z każdego zakupu przekazujemy jako darowiznę wdzięczności na rzecz Crimson Circle '
+    + '(store.crimsoncircle.com/donations), wspierając ich darmową bibliotekę wiedzy. Jeśli pytasz, od czego zacząć '
+    + 'własną podróż ku lekkości i świadomości — zajrzyj właśnie do ich darmowych materiałów. '
+    + 'Kod rabatowy dla przyjaciół: SOVEREIGN20 (-20%).';
+export const KOD_LINII_A = 'SOVEREIGN20';
+export const NAZWA_LINII_A = '0.00G NEW ENERGY ORIGINALS';
+const TAGI_LINII_A = ['New-Energy', 'Sovereign-Classics', 'TeO-000G'];
 
 const uchwyt = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
 
 const koszulkaA = (napis: string, nota: string): Produkt => ({
-    handle: `shaumbra-${uchwyt(napis)}`, tytul: `${napis} — Shaumbra Originals`, linia: 'A', typ: 'T-shirt', format: 'dtg', uklad: 'stempel',
-    napis, podpis: 'SHAUMBRA ORIGINALS', nota, tagi: ['Shaumbra', 'Shaumbra Originals', 'T-shirt', 'DTG', '0.00G'],
+    handle: `new-energy-${uchwyt(napis)}`, tytul: `${napis} — 0.00G New Energy Originals`, linia: 'A', typ: 'T-shirt', format: 'dtg', uklad: 'stempel',
+    napis, podpis: NAZWA_LINII_A, nota, tagi: [...TAGI_LINII_A, 'T-shirt', 'DTG'],
     cenaEur: 34.9, opcja: { nazwa: 'Rozmiar', wartosci: ROZMIARY_ODZIEZ },
 });
 const naklejkaA = (napis: string, nota: string): Produkt => ({
-    handle: `shaumbra-sticker-${uchwyt(napis)}`, tytul: `${napis} — Shaumbra Bumper Sticker`, linia: 'A', typ: 'Naklejka', format: 'naklejka', uklad: 'stempel',
-    napis, podpis: 'SHAUMBRA ORIGINALS', nota, tagi: ['Shaumbra', 'Shaumbra Originals', 'Naklejka', 'Die-Cut', '0.00G'],
+    handle: `new-energy-sticker-${uchwyt(napis)}`, tytul: `${napis} — 0.00G New Energy Sticker`, linia: 'A', typ: 'Naklejka', format: 'naklejka', uklad: 'stempel',
+    napis, podpis: NAZWA_LINII_A, nota, tagi: [...TAGI_LINII_A, 'Naklejka', 'Die-Cut'],
     cenaEur: 4.9, opcja: { nazwa: 'Rozmiar', wartosci: ROZMIARY_NAKLEJKA },
 });
 const koszulkaB = (napis: string, podpis: string): Produkt => ({
@@ -102,7 +121,7 @@ export function opisHtml(p: Produkt): string {
         `<p>${esc(p.nota)}</p>`,
         `<p><strong>Metoda nadruku:</strong> ${esc(f.metoda)}.</p>`,
         `<p><strong>Plik produkcyjny:</strong> ${esc(f.nazwa)}, tło ${esc(f.tlo)}.</p>`,
-        ...(p.linia === 'A' ? [`<p><em>${esc(KOD_SHAUMBRA)}</em></p>`] : []),
+        ...(p.linia === 'A' ? [`<p><em>${esc(NOTA_LINII_A)}</em></p>`] : []),
     ];
     return czesci.join('');
 }
@@ -110,7 +129,8 @@ export function opisHtml(p: Produkt): string {
 // ── CSV w układzie importu Shopify ──
 export const KOLUMNY = ['Handle', 'Title', 'Body (HTML)', 'Vendor', 'Type', 'Tags', 'Published',
     'Option1 Name', 'Option1 Value', 'Variant SKU', 'Variant Grams', 'Variant Inventory Tracker', 'Variant Inventory Qty',
-    'Variant Inventory Policy', 'Variant Fulfillment Service', 'Variant Price', 'Variant Requires Shipping', 'Variant Taxable', 'Status'];
+    'Variant Inventory Policy', 'Variant Fulfillment Service', 'Variant Price', 'Variant Requires Shipping', 'Variant Taxable',
+    'Image Src', 'Image Position', 'Image Alt Text', 'Status'];
 
 const pole = (v: string | number) => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
 const gramy = (p: Produkt) => (p.format === 'naklejka' ? 10 : p.typ === 'Bluza' ? 600 : p.format === 'plakat' ? 120 : 190);
@@ -129,7 +149,9 @@ export function wiersze(produkty: Produkt[] = PRODUKTY): string[][] {
                 pierwszy ? p.tagi.join(', ') : '', pierwszy ? 'TRUE' : '',
                 p.opcja.nazwa, wart,
                 `${p.handle}-${uchwyt(wart)}`.toUpperCase(), String(gramy(p)), 'shopify', '0', 'continue', 'manual',
-                p.cenaEur.toFixed(2), 'TRUE', 'TRUE', pierwszy ? 'active' : '',
+                p.cenaEur.toFixed(2), 'TRUE', 'TRUE',
+                pierwszy ? urlPodgladu(p.handle) : '', pierwszy ? '1' : '', pierwszy ? `${p.tytul} — ${FORMATY[p.format].metoda}` : '',
+                pierwszy ? 'active' : '',
             ]);
         });
     }
@@ -138,7 +160,9 @@ export function wiersze(produkty: Produkt[] = PRODUKTY): string[][] {
 export const csv = (produkty: Produkt[] = PRODUKTY) => wiersze(produkty).map((w) => w.map(pole).join(',')).join('\r\n');
 
 // ── zapis na dysk ──
-const bezpiecznyHandle = (h: string) => { const s = String(h); if (!/^[a-z0-9][a-z0-9-]{1,60}$/.test(s)) throw new Error(`Zły handle: „${s}”.`); return s; };
+// Handle bywa długi („new-energy-sticker-the-universe-conspires-to-fill-your-desires”) — Shopify
+// dopuszcza do 255 znaków. Pilnujemy kształtu (same małe litery, cyfry i myślniki), nie długości.
+const bezpiecznyHandle = (h: string) => { const s = String(h); if (!/^[a-z0-9][a-z0-9-]{1,120}$/.test(s)) throw new Error(`Zły handle: „${s}”.`); return s; };
 export const katalogProduktu = (handle: string) => path.join(KATALOG, bezpiecznyHandle(handle));
 
 /** Zapisuje gotowy PNG z przeglądarki. Przyjmuje tylko handle z katalogu — nic nie trafia poza `teo-shop/`. */
@@ -153,9 +177,20 @@ export async function zapiszPlik(handle: string, png: Buffer) {
     await fs.writeFile(path.join(kat, 'METODA-NADRUKU.txt'), [
         p.tytul, '', `Metoda nadruku: ${FORMATY[p.format].metoda}`, `Plik: ${FORMATY[p.format].nazwa}, tło ${FORMATY[p.format].tlo}`,
         `Linia: ${p.linia}`, `Cena: ${p.cenaEur.toFixed(2)} EUR`, `Tagi: ${p.tagi.join(', ')}`,
-        ...(p.linia === 'A' ? ['', KOD_SHAUMBRA] : []),
+        ...(p.linia === 'A' ? ['', NOTA_LINII_A] : []),
     ].join('\n'), 'utf8');
     return { handle, plik, bajtow: png.length };
+}
+
+/** Zapisuje podgląd sklepowy 1200×1440 — ten plik trafia do portalu i to jego adres jedzie do Shopify. */
+export async function zapiszPodglad(handle: string, png: Buffer) {
+    const p = PRODUKTY.find((x) => x.handle === handle);
+    if (!p) throw new Error(`Nie znam produktu „${handle}”.`);
+    if (!Buffer.isBuffer(png) || png.length < 500 || png.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') throw new Error('To nie jest plik PNG.');
+    await fs.mkdir(KATALOG_PODGLADOW, { recursive: true });
+    const plik = path.join(KATALOG_PODGLADOW, `${bezpiecznyHandle(handle)}.png`);
+    await fs.writeFile(plik, png);
+    return { handle, plik, url: urlPodgladu(handle), bajtow: png.length };
 }
 
 /** Pisze `teo_shop_import.csv` obok folderów produktów. BOM, żeby Excel nie zjadł polskich znaków. */
@@ -170,7 +205,9 @@ export async function stan() {
     const out = [];
     for (const p of PRODUKTY) {
         const plik = path.join(katalogProduktu(p.handle), `${p.handle}.png`);
-        out.push({ ...p, gotowy: await fs.access(plik).then(() => true, () => false), metoda: FORMATY[p.format].metoda, wymiar: FORMATY[p.format].nazwa });
+        const pod = path.join(KATALOG_PODGLADOW, `${p.handle}.png`);
+        out.push({ ...p, gotowy: await fs.access(plik).then(() => true, () => false), podgladGotowy: await fs.access(pod).then(() => true, () => false),
+            url: urlPodgladu(p.handle), metoda: FORMATY[p.format].metoda, wymiar: FORMATY[p.format].nazwa });
     }
-    return { katalog: KATALOG, csv: PLIK_CSV, produkty: out, csvGotowy: await fs.access(PLIK_CSV).then(() => true, () => false) };
+    return { katalog: KATALOG, katalogPodgladow: KATALOG_PODGLADOW, adresPodgladu: ADRES_PODGLADU, csv: PLIK_CSV, produkty: out, csvGotowy: await fs.access(PLIK_CSV).then(() => true, () => false) };
 }

@@ -51,11 +51,12 @@ function fala(c: CanvasRenderingContext2D, x0: number, x1: number, y: number, wy
 }
 
 /** Rysuje gotowy plik produkcyjny. Czysta funkcja — ten sam produkt daje zawsze ten sam obraz. */
-export function rysujNadruk(c: CanvasRenderingContext2D, uklad: Uklad, f: FormatDruku, t: TekstyDruku) {
+export function rysujNadruk(c: CanvasRenderingContext2D, uklad: Uklad, f: FormatDruku, t: TekstyDruku, czysc = true) {
     const { w: W, h: H } = f;
     // NIE zerujemy transformacji: podgląd rysuje ten sam układ na mniejszym płótnie przez `setTransform(skala…)`,
     // a reset kazałby mu rysować w skali 4500 px — i cały nadruk lądował poza kadrem.
-    c.save(); c.clearRect(0, 0, W, H);   // przezroczyste tło pod DTG / winyl
+    // `czysc: false` dla podglądu sklepowego — tam nadruk siada NA ciemnym tle i czyszczenie zjadłoby je pod spodem.
+    c.save(); if (czysc) c.clearRect(0, 0, W, H);   // przezroczyste tło pod DTG / winyl
     const sx = W / 2, maxSzer = W * 0.82;
 
     if (uklad === 'fala') {
@@ -89,6 +90,44 @@ export function rysujNadruk(c: CanvasRenderingContext2D, uklad: Uklad, f: Format
         if (t.podpis) napis(c, t.podpis.toUpperCase(), sx, y + H * 0.035, `500 ${pod}px ${MONO}`, TUSZ.zloto, pod * 0.36);
     }
     c.restore();
+}
+
+export const PODGLAD = { w: 1200, h: 1440 };
+
+/**
+ * 🏬 Podgląd sklepowy — to, co widzi kupujący w Shopify.
+ *
+ * Plik produkcyjny jest jasnym tuszem na PRZEZROCZYSTOŚCI, więc na białej karcie produktu byłby
+ * niewidzialny. Podgląd kładzie więc nadruk na ciemnej karcie — tak, jak wygląda na tkaninie —
+ * i dopasowuje go do stałego kadru 1200×1440, żeby siatka sklepu była równa niezależnie od tego,
+ * czy produkt jest koszulką 4500×5400, naklejką 3000×3000 czy plakatem 5400×7200.
+ */
+export function rysujPodglad(c: CanvasRenderingContext2D, uklad: Uklad, f: FormatDruku, t: TekstyDruku) {
+    const { w: W, h: H } = PODGLAD;
+    c.save(); c.clearRect(0, 0, W, H);
+    // Tło PŁASKIE, nie gradientowe — i to nie jest oszczędzanie na wyglądzie. Gładki gradient na
+    // 1200×1440 robił PNG o wadze 1,48 MB (31 MB na całą kolekcję w repozytorium portalu i wolna
+    // siatka sklepu). Płaska płyta z ramką waży ułamek tego, a tekst zostaje tak samo ostry.
+    c.fillStyle = '#0d0e12'; c.fillRect(0, 0, W, H);
+    c.strokeStyle = 'rgba(230,196,124,0.28)'; c.lineWidth = 3;
+    c.strokeRect(28.5, 28.5, W - 57, H - 57);
+
+    const s = Math.min((W * 0.88) / f.w, (H * 0.88) / f.h);
+    c.save();
+    c.translate((W - f.w * s) / 2, (H - f.h * s) / 2);
+    c.scale(s, s);
+    rysujNadruk(c, uklad, f, t, false);   // bez czyszczenia — nadruk siada na ciemnej karcie
+    c.restore();
+    c.restore();
+}
+export async function zbudujPodglad(uklad: Uklad, f: FormatDruku, t: TekstyDruku): Promise<Blob> {
+    const p = document.createElement('canvas'); p.width = PODGLAD.w; p.height = PODGLAD.h;
+    const c = p.getContext('2d');
+    if (!c) throw new Error('Przeglądarka nie dała płótna 2D — podglądu nie da się złożyć.');
+    rysujPodglad(c, uklad, f, t);
+    const blob = await new Promise<Blob | null>((r) => p.toBlob(r, 'image/png'));
+    if (!blob) throw new Error('Nie udało się zapisać podglądu jako PNG.');
+    return blob;
 }
 
 /** Składa plik produkcyjny i oddaje PNG z przezroczystym tłem. */

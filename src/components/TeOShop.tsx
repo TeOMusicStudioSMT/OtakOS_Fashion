@@ -7,14 +7,14 @@
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Download, FileSpreadsheet, Loader2, RefreshCw, ShoppingBag } from 'lucide-react';
-import { rysujNadruk, zbudujNadruk, type Uklad } from '../utils/teoShopGrafika';
+import { rysujNadruk, zbudujNadruk, zbudujPodglad, type Uklad } from '../utils/teoShopGrafika';
 
 interface Produkt {
     handle: string; tytul: string; linia: 'A' | 'B' | 'C'; typ: string; format: 'dtg' | 'naklejka' | 'plakat';
     uklad: Uklad; napis: string; podpis: string; nota: string; tagi: string[]; cenaEur: number;
-    gotowy: boolean; metoda: string; wymiar: string;
+    gotowy: boolean; podgladGotowy: boolean; url: string; metoda: string; wymiar: string;
 }
-interface Stan { katalog: string; csv: string; csvGotowy: boolean; produkty: Produkt[] }
+interface Stan { katalog: string; katalogPodgladow: string; adresPodgladu: string; csv: string; csvGotowy: boolean; produkty: Produkt[] }
 
 const FORMATY: Record<Produkt['format'], { w: number; h: number }> = {
     dtg: { w: 4500, h: 5400 }, naklejka: { w: 3000, h: 3000 }, plakat: { w: 5400, h: 7200 },
@@ -51,10 +51,17 @@ export const TeOShop: React.FC = () => {
         try {
             for (const [i, p] of stan.produkty.entries()) {
                 setPostep(`${i + 1}/${stan.produkty.length} · ${p.tytul}`);
-                const blob = await zbudujNadruk(p.uklad, FORMATY[p.format], { napis: p.napis, podpis: p.podpis });
+                const teksty = { napis: p.napis, podpis: p.podpis };
+                // plik produkcyjny (przezroczysty, pełna rozdzielczość) — zostaje na dysku do druku
+                const blob = await zbudujNadruk(p.uklad, FORMATY[p.format], teksty);
                 const r = await fetch(`/api/teoshop/plik/${p.handle}`, { method: 'POST', headers: { 'Content-Type': 'image/png' }, body: blob });
                 const d = await r.json();
                 if (!d.ok) throw new Error(`${p.tytul}: ${d.error}`);
+                // podgląd sklepowy 1200×1440 na ciemnej karcie — ten jedzie do portalu i do Shopify
+                const pod = await zbudujPodglad(p.uklad, FORMATY[p.format], teksty);
+                const rp = await fetch(`/api/teoshop/podglad/${p.handle}`, { method: 'POST', headers: { 'Content-Type': 'image/png' }, body: pod });
+                const dp = await rp.json();
+                if (!dp.ok) throw new Error(`${p.tytul} (podgląd): ${dp.error}`);
                 await new Promise((x) => setTimeout(x, 30));   // oddech dla przeglądarki przy 4500×5400
             }
             setPostep('Piszę teo_shop_import.csv…');
@@ -78,6 +85,7 @@ export const TeOShop: React.FC = () => {
                     <h2 className="flex items-center gap-2 text-2xl font-black tracking-tight text-[#00ff66]"><ShoppingBag className="h-6 w-6" /> TeO ShoP — Kolekcja &amp; Eksport</h2>
                     <p className="mt-1 text-sm text-neutral-400">{stan.produkty.length} produktów · gotowych plików: {gotowych} · CSV: {stan.csvGotowy ? 'jest' : 'brak'}</p>
                     <p className="mt-0.5 break-all font-mono text-[11px] text-neutral-600">{stan.katalog}</p>
+                    <p className="break-all font-mono text-[11px] text-neutral-600">podglądy → {stan.katalogPodgladow} · {stan.adresPodgladu}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                     <button onClick={() => void odswiez()} disabled={pracuje} className="rounded-lg border border-white/15 px-3 py-2 text-sm text-neutral-300 hover:bg-white/5 disabled:opacity-40"><RefreshCw className="mr-1 inline h-4 w-4" /> Odśwież</button>
@@ -105,7 +113,8 @@ export const TeOShop: React.FC = () => {
                                 <div className="mt-0.5 text-[11px] text-neutral-500">{p.typ} · {p.cenaEur.toFixed(2)} €</div>
                                 <div className="mt-1 text-[10px] leading-tight text-neutral-600">{p.wymiar}</div>
                                 <div className="mt-0.5 text-[10px] leading-tight text-[#00ff66]/70">{p.metoda}</div>
-                                <div className={`mt-1.5 text-[11px] ${p.gotowy ? 'text-emerald-400' : 'text-neutral-600'}`}>{p.gotowy ? '✓ plik na dysku' : '· plik jeszcze nie powstał'}</div>
+                                <div className={`mt-1.5 text-[11px] ${p.gotowy ? 'text-emerald-400' : 'text-neutral-600'}`}>{p.gotowy ? '✓ plik produkcyjny' : '· plik jeszcze nie powstał'}</div>
+                                <div className={`text-[11px] ${p.podgladGotowy ? 'text-emerald-400' : 'text-neutral-600'}`}>{p.podgladGotowy ? '✓ podgląd sklepowy' : '· podgląd jeszcze nie powstał'}</div>
                             </div>
                         ))}
                     </div>
